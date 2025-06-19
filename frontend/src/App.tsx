@@ -1,20 +1,47 @@
+import { useState } from "react";
 import Wizard from "./components/Wizard";
 import DataViewer from "./components/DatabaseViewer";
-import AdminWizardConfig from "./components/Admin";
+import Admin from "./components/Admin";
 
-type Route = "/" | "/data" | "/admin";
-
-const pages: Record<Route, React.ReactElement> = {
+const routes = {
   "/": <Wizard />,
   "/data": <DataViewer />,
-  "/admin": <AdminWizardConfig />,
-};
+  "/admin": <Admin />,
+} as const;
 
 export default function App() {
-  const route = window.location.pathname;
+  const [route, setRoute] = useState(
+    window.location.pathname as keyof typeof routes,
+  );
+
+  const navigate = (path: keyof typeof routes) => {
+    window.history.pushState({}, "", path);
+    setRoute(path);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-      {pages[route] ?? <div className="p-8">404</div>}
+    <div className="min-h-screen bg-gray-900 text-white">
+      <nav className="bg-gray-800 px-6 py-4 shadow-md flex space-x-4">
+        <button onClick={() => navigate("/")} className="hover:text-blue-400">
+          Onboarding
+        </button>
+        <button
+          onClick={() => navigate("/data")}
+          className="hover:text-blue-400"
+        >
+          Data
+        </button>
+        <button
+          onClick={() => navigate("/admin")}
+          className="hover:text-blue-400"
+        >
+          Admin
+        </button>
+      </nav>
+
+      <div className="flex justify-center p-6">
+        {routes[route] ?? <div>404: Page Not Found</div>}
+      </div>
     </div>
   );
 }

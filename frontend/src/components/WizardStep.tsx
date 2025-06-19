@@ -36,7 +36,6 @@ const wizardSteps: Record<WizardStepKind, React.ReactElement> = {
       />
     </div>
   ),
-
   birthdate: (
     <div className="flex flex-col">
       <span className="m-2">Birthday</span>
