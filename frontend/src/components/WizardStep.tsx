@@ -1,4 +1,9 @@
-type WizardStepKind = "username" | "password" | "birthdate" | "aboutme";
+type WizardStepKind =
+  | "username"
+  | "password"
+  | "birthdate"
+  | "address"
+  | "aboutme";
 
 const wizardSteps: Record<WizardStepKind, React.ReactElement> = {
   username: (
@@ -21,6 +26,17 @@ const wizardSteps: Record<WizardStepKind, React.ReactElement> = {
       />
     </div>
   ),
+  address: (
+    <div className="flex flex-col">
+      <span className="m-2">Address</span>
+      <input
+        type="email"
+        placeholder="address"
+        className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+  ),
+
   birthdate: (
     <div className="flex flex-col">
       <span className="m-2">Birthday</span>
@@ -42,17 +58,15 @@ const wizardSteps: Record<WizardStepKind, React.ReactElement> = {
 };
 
 type Props = {
-  title: String;
-  description: String;
   fields: WizardStepKind[];
   onNext: () => void;
   onBack: () => void;
 };
 
-export default function WizardStep({ title, fields, onNext, onBack }: Props) {
+export default function WizardStep({ fields, onNext, onBack }: Props) {
   return (
     <div>
-      <h1 className="text-2xl font-semibold mb-2">{title}</h1>
+      <h1 className="text-2xl font-semibold mb-2">Onboarding</h1>
       <p className="text-gray-400 mb-6">Please fill out the following.</p>
 
       <div className="space-y-3 mb-6">

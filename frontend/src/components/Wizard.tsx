@@ -11,20 +11,16 @@ export default function Wizard() {
   const handleBack = () =>
     setStep((currStep) => (currStep - 1 >= 0 ? step - 1 : 0));
 
-  function makeWizardStep(title, fields) {
+  function makeWizardStep(fields) {
     return (
-      <WizardStep
-        title={title}
-        fields={fields}
-        onNext={handleNext}
-        onBack={handleBack}
-      />
+      <WizardStep fields={fields} onNext={handleNext} onBack={handleBack} />
     );
   }
 
   const steps = [
-    makeWizardStep("Step 1", ["username", "password"]),
-    makeWizardStep("Step 2", ["birthdate", "aboutme"]),
+    makeWizardStep(["username", "password"]),
+    makeWizardStep(["birthdate", "address"]),
+    makeWizardStep(["aboutme"]),
   ];
 
   return (
