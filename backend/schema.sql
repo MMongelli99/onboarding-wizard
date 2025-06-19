@@ -12,3 +12,9 @@ CREATE TABLE IF NOT EXISTS components (
     kind TEXT NOT NULL UNIQUE,
     step INTEGER
 );
+
+-- insert default configuration, the step in which each component appears
+INSERT INTO components (kind, step) VALUES ('birthdate', 2);
+INSERT INTO components (kind, step) VALUES ('address', 2);
+INSERT INTO components (kind, step) VALUES ('aboutme', 3);
+

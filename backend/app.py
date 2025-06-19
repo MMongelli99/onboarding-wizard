@@ -26,6 +26,10 @@ def query_db(query, kwargs={}) -> Optional[Dict[str, Any] | int]:
         result = cursor.fetchall()
     elif query_.startswith('INSERT'):
         result = cursor.lastrowid
+    elif query_.startswith('PRAGMA'):
+        result = cursor.fetchall()
+    else:
+        raise Exception(f"Define how to handle this query: {query}")
 
     conn.close()
     return result
@@ -38,8 +42,12 @@ def database_json():
 
     output = {}
     for table in table_names:
-        output[table] = query_db(f"SELECT * FROM {table}")
+        output[table] = {
+            "rows": query_db(f"SELECT * FROM {table}"),
+            "columns": [col["name"] for col in query_db(f"PRAGMA table_info({table})")],
+        }
 
+    print(output)
     return jsonify(output)
 
 if __name__ == "__main__":
