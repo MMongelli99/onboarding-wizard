@@ -3,3 +3,5 @@
 .venv
 frontend/node_modules
 backend/.venv
+db.sqlite3
+__pycache__

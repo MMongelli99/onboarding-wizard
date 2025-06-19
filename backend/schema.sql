@@ -1,9 +1,14 @@
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email_address TEXT NOT NULL,
+    email_address TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
     birthdate INTEGER,
     address TEXT,
     about_me TEXT
 );
 
+CREATE TABLE IF NOT EXISTS components (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    kind TEXT NOT NULL UNIQUE,
+    step INTEGER
+);

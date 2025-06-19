@@ -1,65 +1,75 @@
 from flask import Flask, jsonify
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 import sqlite3
 from typing import Optional, Dict, Any
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for frontend requests
+CORS(app, origins="http://localhost:5173")
 
 DATABASE_FILE = "db.sqlite3"
-DATABASE_CONN = sqlite3.connect(DATABASE_FILE)
-DATABASE_CONN.row_factory = lambda cursor, row: {
-    col[0]: row[idx] for idx, col in enumerate(cursor.description)
-}
 
-def query_db(query, kwargs={}) -> Optional[Dict[str, Any], int]:
-    cursor = DATABASE_CONN.execute(query, kwargs)
-    DATABASE_CONN.commit()
+def get_db_connection():
+    conn = sqlite3.connect(DATABASE_FILE)
+    conn.row_factory = lambda cursor, row: {
+        col[0]: row[idx] for idx, col in enumerate(cursor.description)
+    }
+    return conn
+
+def query_db(query, kwargs={}) -> Optional[Dict[str, Any] | int]:
+    conn = get_db_connection()
+    cursor = conn.execute(query, kwargs)
+    conn.commit()
 
     query_ = query.strip().upper()
+    result = None
     if query_.startswith('SELECT'):
-        return cursor.fetchall()
+        result = cursor.fetchall()
     elif query_.startswith('INSERT'):
-        return cursor.lastrowid
-    else:
-        return None
+        result = cursor.lastrowid
 
-@app.route("/api/items")
-def get_items():
-    conn = get_db_connection()
-    items = conn.execute("SELECT id, name FROM items").fetchall()
     conn.close()
-    return jsonify([dict(row) for row in items])
+    return result
 
+@app.route("/api/data", methods=['GET'])
+@cross_origin(origins="http://localhost:5173")
+def database_json():
+    tables = query_db("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+    table_names = [row["name"] for row in tables]
+
+    output = {}
+    for table in table_names:
+        output[table] = query_db(f"SELECT * FROM {table}")
+
+    return jsonify(output)
 
 if __name__ == "__main__":
-    # app.run(debug=True)
-    result = query_db(
-        """
-        INSERT INTO users 
-        (
-            email_address,
-            password
-            -- birthdate,
-            -- address,
-            -- about_me
-        )
-        VALUES
-        (
-            :email_address,
-            :password
-            -- :birthdate,
-            -- :address,
-            -- :about_me
-        )
-        """,
-        {
-            "email_address": "mike@zealthy.com",
-            "password": "1234"
-            # birthdate,
-            # address,
-            # about_me
-        },
-    )
-    print(result)
-    print(query_db('SELECT * FROM users'))
+    app.run(debug=True, port=5000)
+    # result = query_db(
+    #     """
+    #     INSERT INTO users 
+    #     (
+    #         email_address,
+    #         password
+    #         -- birthdate,
+    #         -- address,
+    #         -- about_me
+    #     )
+    #     VALUES
+    #     (
+    #         :email_address,
+    #         :password
+    #         -- :birthdate,
+    #         -- :address,
+    #         -- :about_me
+    #     )
+    #     """,
+    #     {
+    #         "email_address": "mike@zealthy.com",
+    #         "password": "1234"
+    #         # birthdate,
+    #         # address,
+    #         # about_me
+    #     },
+    # )
+    # print(result)
+    # print(query_db('SELECT * FROM users'))
