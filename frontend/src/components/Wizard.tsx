@@ -24,12 +24,20 @@ export default function Wizard() {
 
   const steps = [
     makeWizardStep("Step 1", ["username", "password"]),
-    makeWizardStep("Step 2", ["birthdate"]),
+    makeWizardStep("Step 2", ["birthdate", "aboutme"]),
   ];
 
   return (
     <div className="bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md">
       {steps[step]}
+      <div className="mt-6">
+        <div className="w-full h-1 bg-gray-700 rounded">
+          <div
+            className="h-1 bg-blue-500 rounded transition-all duration-300"
+            style={{ width: `${((step + 1) / steps.length) * 100}%` }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
