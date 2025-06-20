@@ -11,6 +11,7 @@ type Props = {
   onBack: () => void;
   formData: Record<string, string>;
   updateField: (field: string, value: string) => void;
+  isFirstStep: boolean;
 };
 
 const getWizardSteps = (
@@ -83,6 +84,7 @@ export default function WizardStep({
   onBack,
   formData,
   updateField,
+  isFirstStep,
 }: Props) {
   const wizardSteps = getWizardSteps(formData, updateField);
 
@@ -90,17 +92,19 @@ export default function WizardStep({
     <div>
       <h1 className="text-2xl font-semibold mb-2">Onboarding</h1>
       <p className="text-gray-400 mb-6">Please fill out the following.</p>
-
       <div className="space-y-3 mb-6">
         {fields.map((field, idx) => (
           <div key={`${field}-${idx}`}>{wizardSteps[field]}</div>
         ))}
       </div>
-
       <div className="flex justify-between items-center">
-        <button onClick={onBack} className="text-gray-400 hover:text-white">
-          Back
-        </button>
+        {!isFirstStep ? (
+          <button onClick={onBack} className="text-gray-400 hover:text-white">
+            Back
+          </button>
+        ) : (
+          <span />
+        )}
         <button
           onClick={onNext}
           className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded"

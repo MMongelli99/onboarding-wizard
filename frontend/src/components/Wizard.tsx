@@ -11,13 +11,13 @@ export default function Wizard() {
   });
 
   const [userId, setUserId] = useState<number | null>(null);
-
   const [step, setStep] = useState(() => {
     const stored = localStorage.getItem("wizard_step");
     return stored ? Number(stored) : 0;
   });
 
   const [stepsConfig, setStepsConfig] = useState<Record<number, string[]>>({});
+  const [complete, setComplete] = useState(false);
 
   const goToStep = (stepIndex: number) => {
     localStorage.setItem("wizard_step", String(stepIndex));
@@ -25,30 +25,15 @@ export default function Wizard() {
   };
 
   const orderedSteps = [1, 2, 3];
-  const staticFirstStepFields = ["email_address", "password"];
   const currentStepKey = orderedSteps[step];
+  const staticFirstStepFields = ["email_address", "password"];
   const dynamicFields = stepsConfig[currentStepKey] || [];
   const fields = currentStepKey === 1 ? staticFirstStepFields : dynamicFields;
 
   useEffect(() => {
     const storedId = localStorage.getItem("user_id");
     if (storedId) {
-      const id = Number(storedId);
-      setUserId(id);
-
-      fetch(`http://127.0.0.1:5000/api/users/${id}`)
-        .then((res) => res.json())
-        .then((data) => {
-          setFormData((prev) => ({
-            ...prev,
-            email_address: data.email_address ?? "",
-            password: data.password ?? "",
-            birthdate: data.birthdate ?? "",
-            address: data.address ?? "",
-            about_me: data.about_me ?? "",
-          }));
-        })
-        .catch((err) => console.error("Failed to load user data", err));
+      setUserId(Number(storedId));
     }
   }, []);
 
@@ -101,25 +86,53 @@ export default function Wizard() {
           const newId = data.id;
           setUserId(newId);
           localStorage.setItem("user_id", String(newId));
-
           fetch(`http://127.0.0.1:5000/api/users/${newId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(updates),
           }).then(() => {
-            goToStep(Math.min(step + 1, orderedSteps.length));
+            if (step + 1 < orderedSteps.length) {
+              goToStep(step + 1);
+            } else {
+              setComplete(true);
+              localStorage.removeItem("wizard_step");
+            }
           });
         });
     } else {
-      const nextStep = Math.min(step + 1, orderedSteps.length - 1);
       persistFields(fields);
-      goToStep(nextStep);
+      if (step + 1 < orderedSteps.length) {
+        goToStep(step + 1);
+      } else {
+        setComplete(true);
+        localStorage.removeItem("wizard_step");
+      }
     }
   };
+
   const handleBack = () => {
     persistFields(fields);
     goToStep(Math.max(step - 1, 0));
   };
+
+  if (complete) {
+    return (
+      <div className="bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md text-white text-center">
+        <h1 className="text-3xl font-bold mb-4">Onboarding Complete</h1>
+        <p className="text-gray-400 mb-6">Thank you for your submission.</p>
+
+        <button
+          onClick={() => {
+            goToStep(orderedSteps.length - 1);
+            setComplete(false);
+          }}
+          className="mt-4 bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded"
+        >
+          Back
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md">
@@ -129,6 +142,7 @@ export default function Wizard() {
         onBack={handleBack}
         formData={formData}
         updateField={setFormField}
+        isFirstStep={step === 0}
       />
       <div className="mt-6">
         <div className="w-full h-1 bg-gray-700 rounded">
