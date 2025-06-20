@@ -33,7 +33,22 @@ export default function Wizard() {
   useEffect(() => {
     const storedId = localStorage.getItem("user_id");
     if (storedId) {
-      setUserId(Number(storedId));
+      const id = Number(storedId);
+      setUserId(id);
+
+      fetch(`http://127.0.0.1:5000/api/users/${id}`)
+        .then((res) => res.json())
+        .then((data) => {
+          setFormData((prev) => ({
+            ...prev,
+            email_address: data.email_address ?? "",
+            password: data.password ?? "",
+            birthdate: data.birthdate ?? "",
+            address: data.address ?? "",
+            about_me: data.about_me ?? "",
+          }));
+        })
+        .catch((err) => console.error("Failed to load user data", err));
     }
   }, []);
 

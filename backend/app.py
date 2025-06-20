@@ -99,6 +99,13 @@ def update_user(user_id):
         query_db(f"UPDATE users SET {key} = ? WHERE id = ?", (value, user_id))
     return "", 204
 
+@app.route("/api/users/<int:user_id>", methods=["GET"])
+def get_user(user_id):
+    rows = query_db("SELECT * FROM users WHERE id = :id", {"id": user_id})
+    if not rows:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify(rows[0])
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
     # result = query_db(
