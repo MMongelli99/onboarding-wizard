@@ -7,7 +7,7 @@ export default function DatabaseViewer() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:5000/api/data")
+    fetch("http://localhost:10000/api/data")
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();

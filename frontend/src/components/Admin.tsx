@@ -67,7 +67,7 @@ const Admin = () => {
   });
 
   useEffect(() => {
-    fetch("http://127.0.0.1:5000/api/components")
+    fetch("http://localhost:10000/api/components")
       .then((res) => res.json())
       .then((data) => {
         const initial: Record<string, Set<string>> = {
@@ -121,7 +121,7 @@ const Admin = () => {
     const newStep =
       toId === "Components" ? null : parseInt(toId.replace(/\D/g, ""), 10);
 
-    fetch(`http://127.0.0.1:5000/api/components/${active.id}`, {
+    fetch(`http://localhost:10000/api/components/${active.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ step: newStep }),

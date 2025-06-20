@@ -1,9 +1,16 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS, cross_origin
 import sqlite3
 from typing import Optional, Dict, Any
+import os
 
 DATABASE_FILE = "db.sqlite3"
+
+def init_db():
+    if not os.path.exists(DATABASE_FILE):
+        with sqlite3.connect(DATABASE_FILE) as conn:
+            with open("schema.sql") as f:
+                conn.executescript(f.read())
 
 def get_db_connection():
     conn = sqlite3.connect(DATABASE_FILE)
@@ -33,12 +40,13 @@ def query_db(query, kwargs={}) -> Optional[Dict[str, Any] | int]:
     conn.close()
     return result
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="../frontend/dist", static_url_path="")
 CORS(
     app,
     resources={r"/api/*": {"origins": "http://localhost:5173"}},
     supports_credentials=True
 )
+init_db()
 
 @app.after_request
 def after_request(response):
@@ -47,6 +55,15 @@ def after_request(response):
     response.headers.add("Access-Control-Allow-Headers", "Content-Type")
     response.headers.add("Access-Control-Allow-Methods", "GET,POST,PATCH,OPTIONS")
     return response
+
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_frontend(path):
+    file_path = os.path.join(app.static_folder, path)
+    if path != "" and os.path.exists(file_path):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, "index.html")
 
 @app.route("/api/data", methods=["GET", "OPTIONS"])
 def database_json():
@@ -90,7 +107,7 @@ def update_user(user_id):
     fields = ["email_address", "password", "birthdate", "address", "about_me"]
     updates = [(key, data[key]) for key in fields if key in data]
 
-    print("updates" , updates)
+    # print("updates" , updates)
 
     if not updates:
         return "", 400
@@ -107,7 +124,7 @@ def get_user(user_id):
     return jsonify(rows[0])
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(host="0.0.0.0", port=10000)
     # result = query_db(
     #     """
     #     INSERT INTO users 

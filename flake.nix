@@ -17,7 +17,7 @@
           default = pkgs.mkShell {
             buildInputs = with pkgs; [
               nodejs_24
-              python314
+              python310
               sqlite
             ];
           };

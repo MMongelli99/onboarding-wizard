@@ -38,7 +38,7 @@ export default function Wizard() {
   }, []);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:5000/api/components")
+    fetch("http://localhost:10000/api/components")
       .then((res) => res.json())
       .then((data) => {
         const steps: Record<number, string[]> = {};
@@ -62,7 +62,7 @@ export default function Wizard() {
       updates[field] = formData[field];
     }
 
-    fetch(`http://127.0.0.1:5000/api/users/${userId}`, {
+    fetch(`http://localhost:10000/api/users/${userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates),
@@ -76,7 +76,7 @@ export default function Wizard() {
     }
 
     if (!userId) {
-      fetch("http://127.0.0.1:5000/api/users", {
+      fetch("http://localhost:10000/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email_address: "", password: "" }),
@@ -86,7 +86,7 @@ export default function Wizard() {
           const newId = data.id;
           setUserId(newId);
           localStorage.setItem("user_id", String(newId));
-          fetch(`http://127.0.0.1:5000/api/users/${newId}`, {
+          fetch(`http://localhost:10000/api/users/${newId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(updates),
