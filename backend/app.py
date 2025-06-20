@@ -46,7 +46,7 @@ CORS(
     resources={r"/api/*": {"origins": "http://localhost:5173"}},
     supports_credentials=True
 )
-init_db()
+# init_db()
 
 @app.after_request
 def after_request(response):
@@ -124,6 +124,7 @@ def get_user(user_id):
     return jsonify(rows[0])
 
 if __name__ == "__main__":
+    init_db()
     app.run(host="0.0.0.0", port=10000)
     # result = query_db(
     #     """
