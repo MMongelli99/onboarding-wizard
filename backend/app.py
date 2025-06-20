@@ -60,7 +60,7 @@ def database_json():
             "columns": [col["name"] for col in query_db(f"PRAGMA table_info({table})")],
         }
 
-    print(output)
+    # print(output)
     return jsonify(output)
 
 @app.route("/api/components", methods=["GET", "OPTIONS"])
@@ -78,6 +78,26 @@ def update_component_step(kind):
     step = data.get("step")
     query_db("UPDATE components SET step = ? WHERE kind = ?", (step, kind))
     return '', 204
+
+@app.route("/api/users", methods=["POST"])
+def create_user():
+    result = query_db("INSERT INTO users (email_address, password) VALUES ('','')")
+    return jsonify({"id": result}), 201
+
+@app.route("/api/users/<int:user_id>", methods=["PATCH"])
+def update_user(user_id):
+    data = request.get_json(force=True)
+    fields = ["email_address", "password", "birthdate", "address", "about_me"]
+    updates = [(key, data[key]) for key in fields if key in data]
+
+    print("updates" , updates)
+
+    if not updates:
+        return "", 400
+
+    for key, value in updates:
+        query_db(f"UPDATE users SET {key} = ? WHERE id = ?", (value, user_id))
+    return "", 204
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

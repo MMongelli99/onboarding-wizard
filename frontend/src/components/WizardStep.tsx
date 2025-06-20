@@ -1,15 +1,28 @@
 type WizardStepKind =
-  | "username"
+  | "email_address"
   | "password"
   | "birthdate"
   | "address"
-  | "aboutme";
+  | "about_me";
 
-const wizardSteps: Record<WizardStepKind, React.ReactElement> = {
-  username: (
+type Props = {
+  fields: WizardStepKind[];
+  onNext: () => void;
+  onBack: () => void;
+  formData: Record<string, string>;
+  updateField: (field: string, value: string) => void;
+};
+
+const getWizardSteps = (
+  formData: Record<string, string>,
+  updateField: (field: string, value: string) => void,
+): Record<WizardStepKind, React.ReactElement> => ({
+  email_address: (
     <div className="flex flex-col">
       <span className="m-2">Email</span>
       <input
+        value={formData.email_address}
+        onChange={(e) => updateField("email_address", e.target.value)}
         type="email"
         placeholder="your.email@website.com"
         className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -20,6 +33,8 @@ const wizardSteps: Record<WizardStepKind, React.ReactElement> = {
     <div className="flex flex-col">
       <span className="m-2">Password</span>
       <input
+        value={formData.password}
+        onChange={(e) => updateField("password", e.target.value)}
         type="password"
         placeholder="********"
         className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -30,7 +45,9 @@ const wizardSteps: Record<WizardStepKind, React.ReactElement> = {
     <div className="flex flex-col">
       <span className="m-2">Address</span>
       <input
-        type="email"
+        value={formData.address}
+        onChange={(e) => updateField("address", e.target.value)}
+        type="text"
         placeholder="address"
         className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
@@ -40,29 +57,35 @@ const wizardSteps: Record<WizardStepKind, React.ReactElement> = {
     <div className="flex flex-col">
       <span className="m-2">Birthday</span>
       <input
+        value={formData.birthdate}
+        onChange={(e) => updateField("birthdate", e.target.value)}
         type="date"
         className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
     </div>
   ),
-  aboutme: (
+  about_me: (
     <div className="flex flex-col">
       <span className="m-2">About Me</span>
       <textarea
+        value={formData.about_me}
+        onChange={(e) => updateField("about_me", e.target.value)}
         placeholder="Tell us about yourself..."
         className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
     </div>
   ),
-};
+});
 
-type Props = {
-  fields: WizardStepKind[];
-  onNext: () => void;
-  onBack: () => void;
-};
+export default function WizardStep({
+  fields,
+  onNext,
+  onBack,
+  formData,
+  updateField,
+}: Props) {
+  const wizardSteps = getWizardSteps(formData, updateField);
 
-export default function WizardStep({ fields, onNext, onBack }: Props) {
   return (
     <div>
       <h1 className="text-2xl font-semibold mb-2">Onboarding</h1>
