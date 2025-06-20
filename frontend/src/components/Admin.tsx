@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   DndContext,
   useDraggable,
@@ -49,26 +49,59 @@ const Droppable = ({
 };
 
 const Admin = () => {
-  const [slots, setSlots] = useState<Record<string, string[]>>({
-    "2nd Step": [],
-    "3rd Step": [],
-  });
+  const [wizardSteps, setWizardSteps] = useState<Record<string, Set<string>>>(
+    {},
+  );
 
-  const items = ["Birthday", "Address", "About Me"];
+  const [components, setComponents] = useState<Array<string>>([]);
+
+  useEffect(() => {
+    fetch("http://127.0.0.1:5000/api/components")
+      .then((res) => res.json())
+      .then((data) => {
+        const dbComponents = data;
+
+        setComponents(
+          dbComponents.reduce(
+            (componentKinds, { kind }) => componentKinds.concat(kind),
+            [],
+          ),
+        );
+
+        const wizardSteps: Record<string, Set<string>> = dbComponents.reduce(
+          (config, { kind, step }) => {
+            if (!config[step]) {
+              config[step] = new Set();
+            }
+            config[step].add(kind);
+            return config;
+          },
+          {},
+        );
+
+        setWizardSteps(wizardSteps);
+      })
+      .catch((err) => console.error("Failed to fetch", err));
+  }, []);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { over, active } = event;
-    if (over) {
-      setSlots((prev) => {
+    if (over && active) {
+      const stepId = over.id;
+      const componentId = active.id;
+
+      setWizardSteps((prev) => {
         const updated = { ...prev };
-        updated[over.id] = [...updated[over.id], active.id];
+        const currentSet = new Set(updated[stepId]);
+        currentSet.add(componentId);
+        updated[stepId] = currentSet;
         return updated;
       });
     }
   };
 
   return (
-    <div className="p-8 min-h-screen">
+    <div className="p-8 min-h-screen text-white bg-gray-900">
       <h1 className="text-2xl font-bold mb-4">Admin</h1>
       <h2 className="text-2xl font-bold mb-4">
         Onboarding Wizard Configuration
@@ -81,21 +114,21 @@ const Admin = () => {
       <h3 className="text-2xl mb-2">Components:</h3>
       <DndContext onDragEnd={handleDragEnd}>
         <div className="m-4 flex space-x-8 mb-8">
-          {items.map((item) => (
-            <Draggable key={item} id={item} />
+          {components.map((component) => (
+            <Draggable key={component} id={component} />
           ))}
         </div>
 
         <h3 className="text-2xl mb-2">Wizard Steps:</h3>
         <div className="m-4 flex space-x-8">
-          {Object.entries(slots).map(([slotName, slotItems]) => (
-            <Droppable key={slotName} id={slotName}>
-              {slotItems.map((item, idx) => (
+          {Object.entries(wizardSteps).map(([step, components]) => (
+            <Droppable key={step} id={step}>
+              {[...components].map((component, idx) => (
                 <div
-                  key={`${slotName}-${item}-${idx}`}
+                  key={`${step}-${component}-${idx}`}
                   className="p-2 mb-2 bg-white text-black rounded shadow"
                 >
-                  {item}
+                  {component}
                 </div>
               ))}
             </Droppable>

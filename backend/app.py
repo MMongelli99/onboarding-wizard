@@ -50,6 +50,12 @@ def database_json():
     print(output)
     return jsonify(output)
 
+@app.route("/api/components", methods=["GET"])
+@cross_origin(origins="http://localhost:5173")
+def get_components():
+    rows = query_db("SELECT * FROM components")
+    return jsonify(rows)
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
     # result = query_db(
