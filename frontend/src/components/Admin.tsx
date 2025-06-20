@@ -49,55 +49,51 @@ const Droppable = ({
 };
 
 const Admin = () => {
-  const [wizardSteps, setWizardSteps] = useState<Record<string, Set<string>>>(
-    {},
-  );
-
-  const [components, setComponents] = useState<Array<string>>([]);
+  const [slots, setSlots] = useState<Record<string, Set<string>>>({
+    Components: new Set(),
+    "Step 2": new Set(),
+    "Step 3": new Set(),
+  });
 
   useEffect(() => {
     fetch("http://127.0.0.1:5000/api/components")
       .then((res) => res.json())
       .then((data) => {
-        const dbComponents = data;
+        const initial: Record<string, Set<string>> = {
+          Components: new Set(),
+          "Step 2": new Set(),
+          "Step 3": new Set(),
+        };
 
-        setComponents(
-          dbComponents.reduce(
-            (componentKinds, { kind }) => componentKinds.concat(kind),
-            [],
-          ),
-        );
+        for (const { kind, step } of data) {
+          if (step === 2) initial["Step 2"].add(kind);
+          else if (step === 3) initial["Step 3"].add(kind);
+          else initial["Components"].add(kind);
+        }
 
-        const wizardSteps: Record<string, Set<string>> = dbComponents.reduce(
-          (config, { kind, step }) => {
-            if (!config[step]) {
-              config[step] = new Set();
-            }
-            config[step].add(kind);
-            return config;
-          },
-          {},
-        );
-
-        setWizardSteps(wizardSteps);
+        setSlots(initial);
       })
       .catch((err) => console.error("Failed to fetch", err));
   }, []);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { over, active } = event;
-    if (over && active) {
-      const stepId = over.id;
-      const componentId = active.id;
+    if (!over || !active) return;
 
-      setWizardSteps((prev) => {
-        const updated = { ...prev };
-        const currentSet = new Set(updated[stepId]);
-        currentSet.add(componentId);
-        updated[stepId] = currentSet;
-        return updated;
-      });
+    const draggedId = active.id as string;
+    const destination = over.id as string;
+
+    // Remove draggedId from all slots
+    const updated: Record<string, Set<string>> = {};
+    for (const [slotName, items] of Object.entries(slots)) {
+      updated[slotName] = new Set(
+        [...items].filter((item) => item !== draggedId),
+      );
     }
+
+    // Add it to the new destination
+    updated[destination].add(draggedId);
+    setSlots(updated);
   };
 
   return (
@@ -107,34 +103,35 @@ const Admin = () => {
         Onboarding Wizard Configuration
       </h2>
       <p className="m-4">
-        Please drag and drop the components to determine their position in the
-        onboarding flow.
+        Drag and drop components between "Components" and Wizard Steps.
       </p>
-
-      <h3 className="text-2xl mb-2">Components:</h3>
       <DndContext onDragEnd={handleDragEnd}>
-        <div className="m-4 flex space-x-8 mb-8">
-          {components.map((component) => (
-            <Draggable key={component} id={component} />
-          ))}
-        </div>
-
-        <h3 className="text-2xl mb-2">Wizard Steps:</h3>
-        <div className="m-4 flex space-x-8">
-          {Object.entries(wizardSteps).map(([step, components]) => (
-            <Droppable key={step} id={step}>
-              {[...components].map((component, idx) => (
-                <div
-                  key={`${step}-${component}-${idx}`}
-                  className="p-2 mb-2 bg-white text-black rounded shadow"
-                >
-                  {component}
-                </div>
+        <div className="flex flex-row space-x-12">
+          {/* Components Area */}
+          <div className="w-1/2">
+            <h3 className="text-2xl mb-2">Components:</h3>
+            <Droppable id="Components">
+              {[...slots["Components"]].map((component) => (
+                <Draggable key={component} id={component} />
               ))}
             </Droppable>
-          ))}
+          </div>
+
+          {/* Wizard Steps Area */}
+          <div className="w-1/2">
+            <h3 className="text-2xl mb-2">Wizard Steps:</h3>
+            <div className="flex flex-col space-y-6">
+              {["Step 2", "Step 3"].map((step) => (
+                <Droppable key={step} id={step}>
+                  {[...slots[step]].map((component) => (
+                    <Draggable key={component} id={component} />
+                  ))}
+                </Droppable>
+              ))}
+            </div>
+          </div>
         </div>
-      </DndContext>
+      </DndContext>{" "}
     </div>
   );
 };
