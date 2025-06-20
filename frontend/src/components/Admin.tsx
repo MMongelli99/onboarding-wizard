@@ -6,21 +6,32 @@ import {
   DragEndEvent,
 } from "@dnd-kit/core";
 
-const Draggable = ({ id }: { id: string }) => {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({ id });
+const Draggable = ({
+  id,
+  disabled = false,
+}: {
+  id: string;
+  disabled?: boolean;
+}) => {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id,
+    disabled,
+  });
   const style = {
     transform: transform
       ? `translate(${transform.x}px, ${transform.y}px)`
       : undefined,
+    opacity: disabled ? 0.5 : 1,
+    cursor: disabled ? "not-allowed" : "move",
   };
 
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
+      {...(!disabled ? listeners : {})}
       {...attributes}
       style={style}
-      className="p-2 m-2 bg-blue-500 text-white rounded cursor-move"
+      className="p-2 m-2 bg-blue-500 text-white rounded"
     >
       {id}
     </div>
@@ -144,9 +155,16 @@ const Admin = () => {
             <div className="flex flex-col space-y-6">
               {["Step 2", "Step 3"].map((step) => (
                 <Droppable key={step} id={step}>
-                  {[...slots[step]].map((component) => (
-                    <Draggable key={component} id={component} />
-                  ))}
+                  {[...slots[step]].map((component) => {
+                    const isOnlyOne = slots[step].size === 1;
+                    return (
+                      <Draggable
+                        key={component}
+                        id={component}
+                        disabled={isOnlyOne}
+                      />
+                    );
+                  })}
                 </Droppable>
               ))}
             </div>
