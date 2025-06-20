@@ -11,8 +11,18 @@ export default function Wizard() {
   });
 
   const [userId, setUserId] = useState<number | null>(null);
-  const [step, setStep] = useState(0);
+
+  const [step, setStep] = useState(() => {
+    const stored = localStorage.getItem("wizard_step");
+    return stored ? Number(stored) : 0;
+  });
+
   const [stepsConfig, setStepsConfig] = useState<Record<number, string[]>>({});
+
+  const goToStep = (stepIndex: number) => {
+    localStorage.setItem("wizard_step", String(stepIndex));
+    setStep(stepIndex);
+  };
 
   const orderedSteps = [1, 2, 3];
   const staticFirstStepFields = ["email_address", "password"];
@@ -82,17 +92,18 @@ export default function Wizard() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(updates),
           }).then(() => {
-            setStep((prev) => Math.min(prev + 1, orderedSteps.length - 1));
+            goToStep(Math.min(step + 1, orderedSteps.length));
           });
         });
     } else {
+      const nextStep = Math.min(step + 1, orderedSteps.length - 1);
       persistFields(fields);
-      setStep((prev) => Math.min(prev + 1, orderedSteps.length - 1));
+      goToStep(nextStep);
     }
   };
   const handleBack = () => {
     persistFields(fields);
-    setStep((prev) => Math.max(prev - 1, 0));
+    goToStep(Math.max(step - 1, 0));
   };
 
   return (
