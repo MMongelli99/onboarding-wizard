@@ -125,7 +125,7 @@ def get_user(user_id):
 
 if __name__ == "__main__":
     init_db()
-    app.run(host="0.0.0.0", port=10000)
+    app.run(debug=False, host="0.0.0.0", port=10000)
     # result = query_db(
     #     """
     #     INSERT INTO users 
