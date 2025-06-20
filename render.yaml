@@ -1,13 +1,15 @@
 services:
   - type: web
-    name: onboarding-app
+    name: onboarding-wizard
     env: python
     plan: free
     buildCommand: |
+      cd backend
       pip install -r requirements.txt
-      cd frontend && npm install && npm run build
-    startCommand: cd backend && python app.py
+      cd ../frontend
+      npm install
+      npm run build
+    startCommand: cd backend && gunicorn -b 0.0.0.0:10000 app:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.10
-
