@@ -123,35 +123,6 @@ def get_user(user_id):
         return jsonify({"error": "User not found"}), 404
     return jsonify(rows[0])
 
-if __name__ == "__main__":
-    init_db()
-    app.run(debug=False, host="0.0.0.0", port=10000)
-    # result = query_db(
-    #     """
-    #     INSERT INTO users 
-    #     (
-    #         email_address,
-    #         password
-    #         -- birthdate,
-    #         -- address,
-    #         -- about_me
-    #     )
-    #     VALUES
-    #     (
-    #         :email_address,
-    #         :password
-    #         -- :birthdate,
-    #         -- :address,
-    #         -- :about_me
-    #     )
-    #     """,
-    #     {
-    #         "email_address": "mike@zealthy.com",
-    #         "password": "1234"
-    #         # birthdate,
-    #         # address,
-    #         # about_me
-    #     },
-    # )
-    # print(result)
-    # print(query_db('SELECT * FROM users'))
+init_db()
+app.run(debug=False, host="0.0.0.0", port=10000)
+
