@@ -1,10 +1,7 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS, cross_origin
 import sqlite3
 from typing import Optional, Dict, Any
-
-app = Flask(__name__)
-CORS(app, origins="http://localhost:5173")
 
 DATABASE_FILE = "db.sqlite3"
 
@@ -26,6 +23,8 @@ def query_db(query, kwargs={}) -> Optional[Dict[str, Any] | int]:
         result = cursor.fetchall()
     elif query_.startswith('INSERT'):
         result = cursor.lastrowid
+    elif query_.startswith('UPDATE'):
+        result = cursor.lastrowid
     elif query_.startswith('PRAGMA'):
         result = cursor.fetchall()
     else:
@@ -34,8 +33,22 @@ def query_db(query, kwargs={}) -> Optional[Dict[str, Any] | int]:
     conn.close()
     return result
 
-@app.route("/api/data", methods=['GET'])
-@cross_origin(origins="http://localhost:5173")
+app = Flask(__name__)
+CORS(
+    app,
+    resources={r"/api/*": {"origins": "http://localhost:5173"}},
+    supports_credentials=True
+)
+
+@app.after_request
+def after_request(response):
+    response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+    response.headers.add("Access-Control-Allow-Credentials", "true")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+    response.headers.add("Access-Control-Allow-Methods", "GET,POST,PATCH,OPTIONS")
+    return response
+
+@app.route("/api/data", methods=["GET", "OPTIONS"])
 def database_json():
     tables = query_db("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
     table_names = [row["name"] for row in tables]
@@ -50,11 +63,21 @@ def database_json():
     print(output)
     return jsonify(output)
 
-@app.route("/api/components", methods=["GET"])
-@cross_origin(origins="http://localhost:5173")
+@app.route("/api/components", methods=["GET", "OPTIONS"])
 def get_components():
     rows = query_db("SELECT * FROM components")
     return jsonify(rows)
+
+@app.route("/api/components/<kind>", methods=["PATCH", "OPTIONS"])
+def update_component_step(kind):
+    if request.method == "OPTIONS":
+        # Preflight CORS request
+        return '', 204
+
+    data = request.get_json(force=True)
+    step = data.get("step")
+    query_db("UPDATE components SET step = ? WHERE kind = ?", (step, kind))
+    return '', 204
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

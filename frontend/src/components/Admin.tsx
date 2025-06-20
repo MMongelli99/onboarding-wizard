@@ -76,24 +76,45 @@ const Admin = () => {
       .catch((err) => console.error("Failed to fetch", err));
   }, []);
 
+  const findContainer = (id: string) => {
+    return (
+      Object.entries(slots).find(([_, items]) => items.has(id))?.[0] ||
+      "Components"
+    );
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { over, active } = event;
     if (!over || !active) return;
 
-    const draggedId = active.id as string;
-    const destination = over.id as string;
+    const fromId = findContainer(active.id);
+    const toId = over.id;
 
-    // Remove draggedId from all slots
-    const updated: Record<string, Set<string>> = {};
-    for (const [slotName, items] of Object.entries(slots)) {
-      updated[slotName] = new Set(
-        [...items].filter((item) => item !== draggedId),
+    if (fromId === toId) return;
+
+    setSlots((prev) => {
+      const updated = { ...prev };
+
+      // Remove from old container
+      updated[fromId] = new Set(
+        [...updated[fromId]].filter((x) => x !== active.id),
       );
-    }
 
-    // Add it to the new destination
-    updated[destination].add(draggedId);
-    setSlots(updated);
+      // Add to new container
+      updated[toId] = new Set([...updated[toId], active.id]);
+
+      return updated;
+    });
+
+    // PATCH backend to update step field
+    const newStep =
+      toId === "Components" ? null : parseInt(toId.replace(/\D/g, ""), 10);
+
+    fetch(`http://127.0.0.1:5000/api/components/${active.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ step: newStep }),
+    }).catch((err) => console.error("Failed to update step", err));
   };
 
   return (
