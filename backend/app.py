@@ -56,6 +56,10 @@ def after_request(response):
     response.headers.add("Access-Control-Allow-Methods", "GET,POST,PATCH,OPTIONS")
     return response
 
+@app.route("/healthz")
+def health_check():
+    return "OK", 200
+
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def serve_frontend(path):
