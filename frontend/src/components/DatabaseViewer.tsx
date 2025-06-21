@@ -7,7 +7,7 @@ export default function DatabaseViewer() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/data")
+    fetch("https://onboarding-wizard-backend.onrender.com/api/data")
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();

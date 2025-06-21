@@ -67,7 +67,7 @@ const Admin = () => {
   });
 
   useEffect(() => {
-    fetch("/api/components")
+    fetch("https://onboarding-wizard-backend.onrender.com/api/components")
       .then((res) => res.json())
       .then((data) => {
         const initial: Record<string, Set<string>> = {
@@ -121,11 +121,14 @@ const Admin = () => {
     const newStep =
       toId === "Components" ? null : parseInt(toId.replace(/\D/g, ""), 10);
 
-    fetch(`/api/components/${active.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ step: newStep }),
-    }).catch((err) => console.error("Failed to update step", err));
+    fetch(
+      `https://onboarding-wizard-backend.onrender.com/api/components/${active.id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ step: newStep }),
+      },
+    ).catch((err) => console.error("Failed to update step", err));
   };
 
   return (
