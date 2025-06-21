@@ -43,14 +43,13 @@ def query_db(query, kwargs={}) -> Optional[Dict[str, Any] | int]:
 app = Flask(__name__, static_folder="../frontend/dist", static_url_path="")
 CORS(
     app,
-    resources={r"/api/*": {"origins": "http://localhost:5173"}},
+    resources={r"/api/*": {"origins": "https://onboarding-wizard.onrender.com"}},
     supports_credentials=True
 )
-# init_db()
 
 @app.after_request
 def after_request(response):
-    response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+    response.headers.add("Access-Control-Allow-Origin", "https://onboarding-wizard.onrender.com")
     response.headers.add("Access-Control-Allow-Credentials", "true")
     response.headers.add("Access-Control-Allow-Headers", "Content-Type")
     response.headers.add("Access-Control-Allow-Methods", "GET,POST,PATCH,OPTIONS")
