@@ -124,5 +124,5 @@ def get_user(user_id):
     return jsonify(rows[0])
 
 init_db()
-app.run(debug=False, host="0.0.0.0", port=10000)
+# app.run(debug=False, host="0.0.0.0", port=10000)
 
