@@ -57,7 +57,11 @@ def after_request(response):
 
 @app.route("/healthz")
 def health_check():
-    return "OK", 200
+
+    # return "OK", 200
+
+    rows = query_db("SELECT * FROM components")
+    return jsonify(rows)
 
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
