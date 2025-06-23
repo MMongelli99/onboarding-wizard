@@ -135,9 +135,18 @@ const Admin = () => {
       <h2 className="text-2xl font-bold mb-4">
         Onboarding Wizard Configuration
       </h2>
-      <p className="m-4">
-        Drag and drop components between "Components" and Wizard Steps.
-      </p>
+      <ul>
+        <li className="m-4">
+          • Drag and drop components between steps of the onboarding wizard.
+        </li>
+        <li className="m-4">
+          • Omit a component from the wizard by leaving it in the "Components"
+          area.
+        </li>
+        <li className="m-4">
+          • Each step of the wizard must have one component.
+        </li>
+      </ul>
       <DndContext onDragEnd={handleDragEnd}>
         <div className="flex flex-row space-x-12">
           {/* Components Area */}
