@@ -18,6 +18,11 @@
           default = let
             backendHost = "localhost:8000";
             developmentInstance = pkgs.writeShellScriptBin "run-dev" ''
+              if [ ! -d "frontend" ] || [ ! -d "backend" ]; then
+                  echo "Run this script from the root of the project."
+                  exit 1
+              fi
+
               function serve_frontend() {
                   cd frontend
                   sudo true
@@ -43,7 +48,6 @@
               serve_frontend
               serve_backend
 
-              # Handle cleanup on interrupt
               trap 'kill $BACKEND_PID $FRONTEND_PID; deactivate' INT TERM
 
               wait
