@@ -80,7 +80,10 @@ export default function Wizard() {
       fetch(`${BACKEND_API_BASE}/api/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email_address: "", password: "" }),
+        body: JSON.stringify({
+          email_address: formData.email_address,
+          password: formData.password,
+        }),
       })
         .then((res) => res.json())
         .then((data) => {
