@@ -5,6 +5,7 @@ import {
   useDroppable,
   DragEndEvent,
 } from "@dnd-kit/core";
+import { BACKEND_API_BASE } from "../config";
 
 const Draggable = ({
   id,
@@ -67,7 +68,7 @@ const Admin = () => {
   });
 
   useEffect(() => {
-    fetch("https://onboarding-wizard-backend.onrender.com/api/components")
+    fetch(`${BACKEND_API_BASE}/api/components`)
       .then((res) => res.json())
       .then((data) => {
         const initial: Record<string, Set<string>> = {
@@ -121,14 +122,11 @@ const Admin = () => {
     const newStep =
       toId === "Components" ? null : parseInt(toId.replace(/\D/g, ""), 10);
 
-    fetch(
-      `https://onboarding-wizard-backend.onrender.com/api/components/${active.id}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ step: newStep }),
-      },
-    ).catch((err) => console.error("Failed to update step", err));
+    fetch(`${BACKEND_API_BASE}/api/components/${active.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ step: newStep }),
+    }).catch((err) => console.error("Failed to update step", err));
   };
 
   return (

@@ -40,16 +40,21 @@ def query_db(query, kwargs={}) -> Optional[Dict[str, Any] | int]:
     conn.close()
     return result
 
+try:
+    FRONTEND_ORIGIN = os.environ["FRONTEND_ORIGIN"]
+except KeyError:
+    raise Exception("FRONTEND_ORIGIN environment variable not set")
+
 app = Flask(__name__, static_folder="../frontend/dist", static_url_path="")
 CORS(
     app,
-    resources={r"/api/*": {"origins": "https://onboarding-wizard.onrender.com"}},
+    resources={r"/api/*": {"origins": FRONTEND_ORIGIN}},
     supports_credentials=True
 )
 
 @app.after_request
 def after_request(response):
-    response.headers.add("Access-Control-Allow-Origin", "https://onboarding-wizard.onrender.com")
+    response.headers.add("Access-Control-Allow-Origin", FRONTEND_ORIGIN)
     response.headers.add("Access-Control-Allow-Credentials", "true")
     response.headers.add("Access-Control-Allow-Headers", "Content-Type")
     response.headers.add("Access-Control-Allow-Methods", "GET,POST,PATCH,OPTIONS")
@@ -57,11 +62,7 @@ def after_request(response):
 
 @app.route("/healthz")
 def health_check():
-
-    # return "OK", 200
-
-    rows = query_db("SELECT * FROM components")
-    return jsonify(rows)
+    return "OK", 200
 
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
@@ -84,7 +85,6 @@ def database_json():
             "columns": [col["name"] for col in query_db(f"PRAGMA table_info({table})")],
         }
 
-    # print(output)
     return jsonify(output)
 
 @app.route("/api/components", methods=["GET", "OPTIONS"])
@@ -95,7 +95,6 @@ def get_components():
 @app.route("/api/components/<kind>", methods=["PATCH", "OPTIONS"])
 def update_component_step(kind):
     if request.method == "OPTIONS":
-        # Preflight CORS request
         return '', 204
 
     data = request.get_json(force=True)
@@ -114,8 +113,6 @@ def update_user(user_id):
     fields = ["email_address", "password", "birthdate", "address", "about_me"]
     updates = [(key, data[key]) for key in fields if key in data]
 
-    # print("updates" , updates)
-
     if not updates:
         return "", 400
 
@@ -131,5 +128,4 @@ def get_user(user_id):
     return jsonify(rows[0])
 
 init_db()
-# app.run(debug=False, host="0.0.0.0", port=10000)
 

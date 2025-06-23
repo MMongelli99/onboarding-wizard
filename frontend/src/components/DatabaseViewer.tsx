@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { BACKEND_API_BASE } from "../config";
 
 type TableData = Record<string, any[]>;
 
@@ -7,7 +8,7 @@ export default function DatabaseViewer() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("https://onboarding-wizard-backend.onrender.com/api/data")
+    fetch(`${BACKEND_API_BASE}/api/data`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();

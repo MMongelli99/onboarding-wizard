@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import WizardStep from "./WizardStep";
+import { BACKEND_API_BASE } from "../config";
 
 export default function Wizard() {
   const [formData, setFormData] = useState({
@@ -38,7 +39,7 @@ export default function Wizard() {
   }, []);
 
   useEffect(() => {
-    fetch("https://onboarding-wizard-backend.onrender.com/api/components")
+    fetch(`${BACKEND_API_BASE}/api/components`)
       .then((res) => res.json())
       .then((data) => {
         const steps: Record<number, string[]> = {};
@@ -62,14 +63,11 @@ export default function Wizard() {
       updates[field] = formData[field];
     }
 
-    fetch(
-      `https://onboarding-wizard-backend.onrender.com/api/users/${userId}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates),
-      },
-    ).catch((err) => console.error("Failed to update fields", err));
+    fetch(`${BACKEND_API_BASE}/api/users/${userId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    }).catch((err) => console.error("Failed to update fields", err));
   };
 
   const handleNext = () => {
@@ -79,7 +77,7 @@ export default function Wizard() {
     }
 
     if (!userId) {
-      fetch("https://onboarding-wizard-backend.onrender.com/api/users", {
+      fetch(`${BACKEND_API_BASE}/api/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email_address: "", password: "" }),
@@ -89,14 +87,11 @@ export default function Wizard() {
           const newId = data.id;
           setUserId(newId);
           localStorage.setItem("user_id", String(newId));
-          fetch(
-            `https://onboarding-wizard-backend.onrender.com/api/users/${newId}`,
-            {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(updates),
-            },
-          ).then(() => {
+          fetch(`${BACKEND_API_BASE}/api/users/${newId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updates),
+          }).then(() => {
             if (step + 1 < orderedSteps.length) {
               goToStep(step + 1);
             } else {
