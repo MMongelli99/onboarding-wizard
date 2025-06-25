@@ -31,13 +31,24 @@ export default function Wizard() {
   const dynamicFields = stepsConfig[currentStepKey] || [];
   const fields = currentStepKey === 1 ? staticFirstStepFields : dynamicFields;
 
+  // Load userId and hydrate formData
   useEffect(() => {
     const storedId = localStorage.getItem("user_id");
     if (storedId) {
-      setUserId(Number(storedId));
+      const id = Number(storedId);
+      setUserId(id);
+      fetch(`${BACKEND_API_BASE}/api/users/${id}`)
+        .then((res) => res.json())
+        .then((userData) => {
+          setFormData((prev) => ({
+            ...prev,
+            ...userData,
+          }));
+        });
     }
   }, []);
 
+  // Load step config
   useEffect(() => {
     fetch(`${BACKEND_API_BASE}/api/components`)
       .then((res) => res.json())
@@ -90,6 +101,18 @@ export default function Wizard() {
           const newId = data.id;
           setUserId(newId);
           localStorage.setItem("user_id", String(newId));
+
+          // Hydrate formData with server values after creation
+          fetch(`${BACKEND_API_BASE}/api/users/${newId}`)
+            .then((res) => res.json())
+            .then((userData) => {
+              setFormData((prev) => ({
+                ...prev,
+                ...userData,
+              }));
+            });
+
+          // Save additional fields
           fetch(`${BACKEND_API_BASE}/api/users/${newId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
