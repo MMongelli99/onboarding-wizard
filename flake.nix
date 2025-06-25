@@ -60,6 +60,8 @@
                 sqlite
                 developmentInstance
               ];
+              FRONTEND_ORIGIN = "http://localhost:5173";
+              VITE_BACKEND_API_BASE = "http://localhost:8000";
             };
         };
       }
