@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BACKEND_API_BASE } from "../services";
+import { getDatabaseTables } from "../services";
 
 type TableData = Record<string, any[]>;
 
@@ -8,13 +8,10 @@ export default function DatabaseViewer() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${BACKEND_API_BASE}/api/data`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then(setData)
-      .catch((err) => setError(err.message));
+    getDatabaseTables({
+      onSuccess: setData,
+      onError: (errMsg) => setError(errMsg),
+    });
   }, []);
 
   if (error) {
