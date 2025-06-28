@@ -5,7 +5,7 @@ import {
   useDroppable,
   DragEndEvent,
 } from "@dnd-kit/core";
-import { BACKEND_API_BASE } from "../services";
+import { BACKEND_API_BASE, getWizardComponents } from "../services";
 
 const Draggable = ({
   id,
@@ -68,24 +68,29 @@ const Admin = () => {
   });
 
   useEffect(() => {
-    fetch(`${BACKEND_API_BASE}/api/components`)
-      .then((res) => res.json())
-      .then((data) => {
+    getWizardComponents({
+      onSuccess: (data) => {
         const initial: Record<string, Set<string>> = {
           Components: new Set(),
           "Step 2": new Set(),
           "Step 3": new Set(),
         };
 
-        for (const { kind, step } of data) {
+        for (const { kind, step } of data as Array<{
+          kind: string;
+          step: number;
+        }>) {
           if (step === 2) initial["Step 2"].add(kind);
           else if (step === 3) initial["Step 3"].add(kind);
           else initial["Components"].add(kind);
         }
 
         setSlots(initial);
-      })
-      .catch((err) => console.error("Failed to fetch", err));
+      },
+      onError: (errMsg) => {
+        console.error("Failed to fetch components:", errMsg);
+      },
+    });
   }, []);
 
   const findContainer = (id: string) => {
