@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BACKEND_API_BASE } from "../config";
+import { BACKEND_API_BASE } from "../services";
 
 type TableData = Record<string, any[]>;
 

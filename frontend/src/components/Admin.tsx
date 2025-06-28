@@ -5,7 +5,7 @@ import {
   useDroppable,
   DragEndEvent,
 } from "@dnd-kit/core";
-import { BACKEND_API_BASE } from "../config";
+import { BACKEND_API_BASE } from "../services";
 
 const Draggable = ({
   id,

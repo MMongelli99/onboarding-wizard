@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import WizardStep from "./WizardStep";
-import { BACKEND_API_BASE } from "../config";
+import { BACKEND_API_BASE } from "../services";
 
 export default function Wizard() {
   const [formData, setFormData] = useState({
