@@ -5,7 +5,7 @@ import {
   useDroppable,
   DragEndEvent,
 } from "@dnd-kit/core";
-import { BACKEND_API_BASE, getWizardComponents } from "../services";
+import { getWizardComponents, updateWizardComponent } from "../services";
 
 const Draggable = ({
   id,
@@ -127,11 +127,9 @@ const Admin = () => {
     const newStep =
       toId === "Components" ? null : parseInt(toId.replace(/\D/g, ""), 10);
 
-    fetch(`${BACKEND_API_BASE}/api/components/${active.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ step: newStep }),
-    }).catch((err) => console.error("Failed to update step", err));
+    updateWizardComponent({ kind: active.id, step: newStep }).catch((err) =>
+      console.error("Failed to update step", err),
+    );
   };
 
   return (
