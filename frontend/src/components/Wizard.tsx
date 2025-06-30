@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
 import WizardStep from "./WizardStep";
-import { BACKEND_API_BASE } from "../services";
+import {
+  getFormData,
+  getWizardComponents,
+  updateUser,
+  setCredentials,
+} from "../services";
 
 export default function Wizard() {
   const [formData, setFormData] = useState({
@@ -31,28 +36,29 @@ export default function Wizard() {
   const dynamicFields = stepsConfig[currentStepKey] || [];
   const fields = currentStepKey === 1 ? staticFirstStepFields : dynamicFields;
 
-  // Load userId and hydrate formData
   useEffect(() => {
     const storedId = localStorage.getItem("user_id");
     if (storedId) {
       const id = Number(storedId);
       setUserId(id);
-      fetch(`${BACKEND_API_BASE}/api/users/${id}`)
-        .then((res) => res.json())
-        .then((userData) => {
+      getFormData({
+        newUserID: id,
+        onSuccess: (userData) => {
           setFormData((prev) => ({
             ...prev,
             ...userData,
           }));
-        });
+        },
+        onError: (errMsg) => {
+          console.error(errMsg);
+        },
+      });
     }
   }, []);
 
-  // Load step config
   useEffect(() => {
-    fetch(`${BACKEND_API_BASE}/api/components`)
-      .then((res) => res.json())
-      .then((data) => {
+    getWizardComponents({
+      onSuccess: (data) => {
         const steps: Record<number, string[]> = {};
         for (const { kind, step } of data) {
           if (step === null) continue;
@@ -60,7 +66,11 @@ export default function Wizard() {
           steps[step].push(kind);
         }
         setStepsConfig(steps);
-      });
+      },
+      onError: (errMsg) => {
+        console.error(errMsg);
+      },
+    });
   }, []);
 
   const setFormField = (field: string, value: string) => {
@@ -74,11 +84,9 @@ export default function Wizard() {
       updates[field] = formData[field];
     }
 
-    fetch(`${BACKEND_API_BASE}/api/users/${userId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updates),
-    }).catch((err) => console.error("Failed to update fields", err));
+    updateUser({ userID: userId, updates: updates }).catch((err) =>
+      console.error("Failed to update fields", err),
+    );
   };
 
   const handleNext = () => {
@@ -88,13 +96,9 @@ export default function Wizard() {
     }
 
     if (!userId) {
-      fetch(`${BACKEND_API_BASE}/api/users`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email_address: formData.email_address,
-          password: formData.password,
-        }),
+      setCredentials({
+        email_address: formData.email_address,
+        password: formData.password,
       })
         .then((res) => res.json())
         .then((data) => {
@@ -102,22 +106,20 @@ export default function Wizard() {
           setUserId(newId);
           localStorage.setItem("user_id", String(newId));
 
-          // Hydrate formData with server values after creation
-          fetch(`${BACKEND_API_BASE}/api/users/${newId}`)
-            .then((res) => res.json())
-            .then((userData) => {
+          getFormData({
+            newUserID: newId,
+            onSuccess: (userData) => {
               setFormData((prev) => ({
                 ...prev,
                 ...userData,
               }));
-            });
+            },
+            onError: (errMsg) => {
+              console.error("Failed to load user data:", errMsg);
+            },
+          });
 
-          // Save additional fields
-          fetch(`${BACKEND_API_BASE}/api/users/${newId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updates),
-          }).then(() => {
+          updateUser({ userID: newId, updates: updates }).then(() => {
             if (step + 1 < orderedSteps.length) {
               goToStep(step + 1);
             } else {

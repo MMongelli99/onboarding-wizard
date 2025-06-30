@@ -22,7 +22,7 @@ const getWizardSteps = (
     <div className="flex flex-col">
       <span className="m-2">Email</span>
       <input
-        value={formData.email_address}
+        value={formData.email_address ?? ""}
         onChange={(e) => updateField("email_address", e.target.value)}
         type="email"
         placeholder="your.email@website.com"
@@ -34,7 +34,7 @@ const getWizardSteps = (
     <div className="flex flex-col">
       <span className="m-2">Password</span>
       <input
-        value={formData.password}
+        value={formData.password ?? ""}
         onChange={(e) => updateField("password", e.target.value)}
         type="password"
         placeholder="********"
@@ -46,7 +46,7 @@ const getWizardSteps = (
     <div className="flex flex-col">
       <span className="m-2">Address</span>
       <input
-        value={formData.address}
+        value={formData.address ?? ""}
         onChange={(e) => updateField("address", e.target.value)}
         type="text"
         placeholder="address"
@@ -58,7 +58,7 @@ const getWizardSteps = (
     <div className="flex flex-col">
       <span className="m-2">Birthday</span>
       <input
-        value={formData.birthdate}
+        value={formData.birthdate ?? ""}
         onChange={(e) => updateField("birthdate", e.target.value)}
         type="date"
         className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
