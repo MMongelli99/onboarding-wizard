@@ -43,14 +43,35 @@ const getWizardSteps = (
     </div>
   ),
   address: (
-    <div className="flex flex-col">
+    <div className="flex flex-col space-y-2">
       <span className="m-2">Address</span>
       <input
-        value={formData.address ?? ""}
-        onChange={(e) => updateField("address", e.target.value)}
         type="text"
-        placeholder="address"
-        className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        placeholder="Street"
+        value={formData.address?.street ?? ""}
+        onChange={(e) => updateField("address", e.target.value, "street")}
+        className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600"
+      />
+      <input
+        type="text"
+        placeholder="City"
+        value={formData.address?.city ?? ""}
+        onChange={(e) => updateField("address", e.target.value, "city")}
+        className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600"
+      />
+      <input
+        type="text"
+        placeholder="State"
+        value={formData.address?.state ?? ""}
+        onChange={(e) => updateField("address", e.target.value, "state")}
+        className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600"
+      />
+      <input
+        type="text"
+        placeholder="ZIP"
+        value={formData.address?.zip ?? ""}
+        onChange={(e) => updateField("address", e.target.value, "zip")}
+        className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600"
       />
     </div>
   ),

@@ -7,12 +7,27 @@ import {
   setCredentials,
 } from "../services";
 
+export type Address = {
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+};
+
+export type FormData = {
+  email_address: string;
+  password: string;
+  birthdate: string;
+  address: Address;
+  about_me: string;
+};
+
 export default function Wizard() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     email_address: "",
     password: "",
     birthdate: "",
-    address: "",
+    address: { street: "", city: "", state: "", zip: "" },
     about_me: "",
   });
 
@@ -25,16 +40,51 @@ export default function Wizard() {
   const [stepsConfig, setStepsConfig] = useState<Record<number, string[]>>({});
   const [complete, setComplete] = useState(false);
 
-  const goToStep = (stepIndex: number) => {
-    localStorage.setItem("wizard_step", String(stepIndex));
-    setStep(stepIndex);
-  };
-
   const orderedSteps = [1, 2, 3];
   const currentStepKey = orderedSteps[step];
   const staticFirstStepFields = ["email_address", "password"];
   const dynamicFields = stepsConfig[currentStepKey] || [];
   const fields = currentStepKey === 1 ? staticFirstStepFields : dynamicFields;
+
+  const goToStep = (stepIndex: number) => {
+    localStorage.setItem("wizard_step", String(stepIndex));
+    setStep(stepIndex);
+  };
+
+  const populateForm = (data: any) => {
+    setFormData({
+      email_address: data.email_address || "",
+      password: data.password || "",
+      birthdate: data.birthdate || "",
+      address: data.address
+        ? JSON.parse(data.address)
+        : { street: "", city: "", state: "", zip: "" },
+      about_me: data.about_me || "",
+    });
+  };
+
+  const syncFormWithDB = (handler?: () => void) => {
+    if (!userId) return;
+
+    const updates: Record<string, string> = {
+      email_address: formData.email_address,
+      password: formData.password,
+      birthdate: formData.birthdate,
+      address: JSON.stringify(formData.address),
+      about_me: formData.about_me,
+    };
+
+    updateUser({ userID: userId, updates })
+      .then(() => {
+        getFormData({
+          newUserID: userId,
+          onSuccess: populateForm,
+          onError: (err) => console.error("Failed to reload", err),
+        });
+        handler?.();
+      })
+      .catch((err) => console.error("Update failed", err));
+  };
 
   useEffect(() => {
     const storedId = localStorage.getItem("user_id");
@@ -43,16 +93,28 @@ export default function Wizard() {
       setUserId(id);
       getFormData({
         newUserID: id,
-        onSuccess: (userData) => {
-          setFormData((prev) => ({
-            ...prev,
-            ...userData,
-          }));
-        },
-        onError: (errMsg) => {
-          console.error(errMsg);
-        },
+        onSuccess: populateForm,
+        onError: (err) => console.error("Failed to load form data", err),
       });
+    } else {
+      setCredentials({ email_address: "", password: "" })
+        .then((res) => res.json())
+        .then((data) => {
+          const newId = data.id;
+          setUserId(newId);
+          localStorage.setItem("user_id", String(newId));
+          updateUser({
+            userID: newId,
+            updates: {
+              address: JSON.stringify({
+                street: "",
+                city: "",
+                state: "",
+                zip: "",
+              }),
+            },
+          });
+        });
     }
   }, []);
 
@@ -67,81 +129,42 @@ export default function Wizard() {
         }
         setStepsConfig(steps);
       },
-      onError: (errMsg) => {
-        console.error(errMsg);
-      },
+      onError: (errMsg) => console.error(errMsg),
     });
   }, []);
 
-  const setFormField = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const persistFields = (fields: string[]) => {
-    if (!userId) return;
-    const updates: Record<string, string> = {};
-    for (const field of fields) {
-      updates[field] = formData[field];
-    }
-
-    updateUser({ userID: userId, updates: updates }).catch((err) =>
-      console.error("Failed to update fields", err),
-    );
+  const setFormField = (
+    field: keyof FormData,
+    value: string,
+    subfield?: keyof Address,
+  ) => {
+    setFormData((prev) => {
+      if (field === "address" && subfield) {
+        return {
+          ...prev,
+          address: { ...prev.address, [subfield]: value },
+        };
+      } else {
+        return { ...prev, [field]: value };
+      }
+    });
   };
 
   const handleNext = () => {
-    const updates: Record<string, string> = {};
-    for (const field of fields) {
-      updates[field] = formData[field];
-    }
-
-    if (!userId) {
-      setCredentials({
-        email_address: formData.email_address,
-        password: formData.password,
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          const newId = data.id;
-          setUserId(newId);
-          localStorage.setItem("user_id", String(newId));
-
-          getFormData({
-            newUserID: newId,
-            onSuccess: (userData) => {
-              setFormData((prev) => ({
-                ...prev,
-                ...userData,
-              }));
-            },
-            onError: (errMsg) => {
-              console.error("Failed to load user data:", errMsg);
-            },
-          });
-
-          updateUser({ userID: newId, updates: updates }).then(() => {
-            if (step + 1 < orderedSteps.length) {
-              goToStep(step + 1);
-            } else {
-              setComplete(true);
-              localStorage.removeItem("wizard_step");
-            }
-          });
-        });
-    } else {
-      persistFields(fields);
+    syncFormWithDB(() => {
       if (step + 1 < orderedSteps.length) {
         goToStep(step + 1);
       } else {
         setComplete(true);
         localStorage.removeItem("wizard_step");
       }
-    }
+    });
   };
 
   const handleBack = () => {
-    persistFields(fields);
-    goToStep(Math.max(step - 1, 0));
+    syncFormWithDB(() => {
+      goToStep(Math.max(step - 1, 0));
+    });
   };
 
   if (complete) {
@@ -149,7 +172,6 @@ export default function Wizard() {
       <div className="bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md text-white text-center">
         <h1 className="text-3xl font-bold mb-4">Onboarding Complete</h1>
         <p className="text-gray-400 mb-6">Thank you for your submission.</p>
-
         <button
           onClick={() => {
             goToStep(orderedSteps.length - 1);
