@@ -1,6 +1,7 @@
 annotated-types==0.7.0
 blinker==1.9.0
 click==8.2.1
+pydantic[email]
 Flask==3.1.1
 flask-cors==6.0.1
 gunicorn==23.0.0
