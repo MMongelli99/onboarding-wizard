@@ -27,6 +27,7 @@ const getWizardSteps = (
         type="email"
         placeholder="your.email@website.com"
         className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        required
       />
     </div>
   ),
@@ -109,10 +110,30 @@ export default function WizardStep({
 }: Props) {
   const wizardSteps = getWizardSteps(formData, updateField);
 
+  const isEmailStep =
+    fields.includes("email_address") || fields.includes("password");
+
+  const isEmailValid =
+    !fields.includes("email_address") ||
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email_address ?? "");
+
+  const isPasswordValid =
+    !fields.includes("password") || (formData.password?.trim() ?? "") !== "";
+
+  const canProceed = isEmailValid && isPasswordValid;
+
   return (
     <div>
       <h1 className="text-2xl font-semibold mb-2">Onboarding</h1>
       <p className="text-gray-400 mb-6">Please fill out the following.</p>
+      {formData.email_address && !isEmailValid && (
+        <p className="text-red-400 text-sm mt-1">
+          Please enter a valid email address.
+        </p>
+      )}
+      {formData.password !== undefined && formData.password.trim() === "" && (
+        <p className="text-red-400 text-sm mt-1">Password cannot be empty.</p>
+      )}{" "}
       <div className="space-y-3 mb-6">
         {fields.map((field, idx) => (
           <div key={`${field}-${idx}`}>{wizardSteps[field]}</div>
@@ -128,10 +149,15 @@ export default function WizardStep({
         )}
         <button
           onClick={onNext}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded"
+          disabled={!canProceed}
+          className={`px-6 py-2 rounded transition ${
+            canProceed
+              ? "bg-blue-500 hover:bg-blue-600 text-white"
+              : "bg-gray-600 text-gray-400 cursor-not-allowed"
+          }`}
         >
           Next
-        </button>
+        </button>{" "}
       </div>
     </div>
   );

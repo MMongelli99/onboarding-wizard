@@ -1,15 +1,22 @@
 from flask import Blueprint, jsonify, request
-from models import query_db
+from models import User, query_db
 
 def get_database_json():
-    tables = query_db("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+    tables = query_db('''
+        SELECT name 
+        FROM sqlite_master 
+        WHERE 
+            type='table' AND 
+            name NOT LIKE 'sqlite_%'
+    ''')
     table_names = [row["name"] for row in tables]
 
     output = {}
     for table in table_names:
+        columns = query_db(f"PRAGMA table_info({table})")
         output[table] = {
             "rows": query_db(f"SELECT * FROM {table}"),
-            "columns": [col["name"] for col in query_db(f"PRAGMA table_info({table})")],
+            "columns": [column["name"] for column in columns],
         }
 
     return jsonify(output)
@@ -27,9 +34,8 @@ def update_component_step(kind):
     query_db("UPDATE components SET step = ? WHERE kind = ?", (step, kind))
     return '', 204
 
-def create_user():
-    result = query_db("INSERT INTO users (email_address, password) VALUES ('','')")
-    return jsonify({"id": result}), 201
+def create_user(): 
+    return jsonify({"id": User.create()}), 201
 
 def update_user(user_id):
     data = request.get_json(force=True)

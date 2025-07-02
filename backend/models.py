@@ -120,3 +120,14 @@ class User(BaseModel):
                 raise ValueError(f"invalid state name/abbr: {repr(state)}")
         return value
 
+    @classmethod
+    def create(cls):
+        return query_db('''
+            INSERT INTO users 
+                (email_address, password) 
+            VALUES 
+                ('','')
+        ''')
+
+
+
