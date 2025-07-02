@@ -56,7 +56,7 @@
             pkgs.mkShell {
               buildInputs = with pkgs; [
                 nodejs_24
-                python310
+                python313
                 sqlite
                 developmentInstance
               ];
