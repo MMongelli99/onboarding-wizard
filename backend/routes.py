@@ -39,19 +39,19 @@ def create_user():
 
 def update_user(user_id):
     data = request.get_json(force=True)
-    fields = ["email_address", "password", "birthdate", "address", "about_me"]
-    updates = [(key, data[key]) for key in fields if key in data]
+    fields = User.get_database_fields()
+    updates = {field: data[field] for field in fields if field in data}
 
     if not updates:
         return "", 400
 
-    for key, value in updates:
-        query_db(f"UPDATE users SET {key} = ? WHERE id = ?", (value, user_id))
+    User.update(user_id, updates)
+        
     return "", 204
 
-def get_user(user_id):
-    rows = query_db("SELECT * FROM users WHERE id = :id", {"id": user_id})
-    if not rows:
+def get_user(user_id):    
+    if (user := User.get(user_id)):
+        return jsonify(user.dict())
+    else:
         return jsonify({"error": "User not found"}), 404
-    return jsonify(rows[0])
-
+    

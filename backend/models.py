@@ -1,5 +1,6 @@
+from __future__ import annotations
 import sqlite3
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import os
 from pydantic import BaseModel, EmailStr, Json, validator
 from datetime import datetime
@@ -97,14 +98,14 @@ class User(BaseModel):
 
     @validator("address")
     def validate_address(cls, value: Optional[Dict[str, str]]):
-        if value:
+        if value and not all(v=='' for k, v in value.items()):
             # confirm address is made up of valid fields
-            expected_fields = ["street", "city","state","zip"]
-            actual_fields = list(value.keys())
+            expected_fields = {"street", "city", "state", "zip"}
+            actual_fields = set(value.keys())
             if actual_fields != expected_fields:
                 raise ValueError(
-                    f"Expected address fields {','.join(expected_fields)}, "
-                    f"got {','.join(actual_fields)}"
+                    f"Expected address fields {', '.join(expected_fields)}, "
+                    f"got {', '.join(actual_fields)}"
                 )
             # confirm no unnecessary leading/trailing spaces
             for field in expected_fields:
@@ -114,11 +115,21 @@ class User(BaseModel):
                         f"{repr(field)} field of address: {repr(value[field])}"
                     )
             # confirm valid state name or abbreviation
-            if not (state := value["state"]) in (
-                states["names"] + states["abbreviations"]
+            if (
+                (state := value["state"]) and 
+                not state in (
+                    states["names"] + states["abbreviations"]
+                )
             ):
                 raise ValueError(f"invalid state name/abbr: {repr(state)}")
         return value
+
+    @classmethod
+    def get_database_fields(cls) -> List[str]:
+        return [
+            field for field in cls.model_json_schema()['properties'].keys()
+            if field != 'id'
+        ]
 
     @classmethod
     def create(cls):
@@ -129,5 +140,18 @@ class User(BaseModel):
                 ('','')
         ''')
 
+    @classmethod
+    def get(cls, user_id: int) -> Optional[User]:
+        rows = query_db("SELECT * FROM users WHERE id = :id", {"id": user_id})
+        if rows:
+            return User(**rows[0])
+
+    @classmethod
+    def update(cls, user_id: int, updates: dict):
+        for field, value in updates.items():
+            query_db(
+                f"UPDATE users SET {field} = :value WHERE id = :id", 
+                {"id": user_id, "value": value}
+            )
 
 

@@ -56,9 +56,7 @@ export default function Wizard() {
       email_address: data.email_address || "",
       password: data.password || "",
       birthdate: data.birthdate || "",
-      address: data.address
-        ? JSON.parse(data.address)
-        : { street: "", city: "", state: "", zip: "" },
+      address: data.address || { street: "", city: "", state: "", zip: "" },
       about_me: data.about_me || "",
     });
   };
