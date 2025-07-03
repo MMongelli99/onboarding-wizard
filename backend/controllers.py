@@ -1,47 +1,57 @@
-from flask import Blueprint
-from routes import (
-    get_database_json,
-    get_components,
-    update_component_step,
-    create_user,
-    update_user,
-    get_user,
-)
+from flask import Blueprint, jsonify, request
+from models import User, query_db
 
-api = Blueprint("api", __name__, url_prefix="/api")
+def get_database_json():
+    tables = query_db('''
+        SELECT name 
+        FROM sqlite_master 
+        WHERE 
+            type='table' AND 
+            name NOT LIKE 'sqlite_%'
+    ''')
+    table_names = [row["name"] for row in tables]
 
-api.add_url_rule(
-    "/data",
-    view_func=get_database_json,
-    methods=["GET"],
-)
+    output = {}
+    for table in table_names:
+        columns = query_db(f"PRAGMA table_info({table})")
+        output[table] = {
+            "rows": query_db(f"SELECT * FROM {table}"),
+            "columns": [column["name"] for column in columns],
+        }
 
-api.add_url_rule(
-    "/components",
-    view_func=get_components,
-    methods=["GET"],
-)
+    return jsonify(output)
 
-api.add_url_rule(
-    "/components/<kind>",
-    view_func=update_component_step,
-    methods=["PATCH"],
-)
+def get_components():
+    rows = query_db("SELECT * FROM components")
+    return jsonify(rows)
 
-api.add_url_rule(
-    "/users",
-    view_func=create_user,
-    methods=["POST"],
-)
+def update_component_step(kind):
+    if request.method == "OPTIONS":
+        return '', 204
 
-api.add_url_rule(
-    "/users/<int:user_id>",
-    view_func=get_user,
-    methods=["GET"],
-)
+    data = request.get_json(force=True)
+    step = data.get("step")
+    query_db("UPDATE components SET step = ? WHERE kind = ?", (step, kind))
+    return '', 204
 
-api.add_url_rule(
-    "/users/<int:user_id>",
-    view_func=update_user,
-    methods=["PATCH"],
-)
+def create_user(): 
+    return jsonify({"id": User.create()}), 201
+
+def update_user(user_id):
+    data = request.get_json(force=True)
+    fields = User.get_database_fields()
+    updates = {field: data[field] for field in fields if field in data}
+
+    if not updates:
+        return "", 400
+
+    User.update(user_id, updates)
+        
+    return "", 204
+
+def get_user(user_id):    
+    if (user := User.get(user_id)):
+        return jsonify(user.dict())
+    else:
+        return jsonify({"error": "User not found"}), 404
+    
