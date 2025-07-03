@@ -1,6 +1,6 @@
 from flask import Flask, send_from_directory
 from flask_cors import CORS, cross_origin
-from controllers import api
+from routes import api
 from models import init_db
 import os
 

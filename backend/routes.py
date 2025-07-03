@@ -1,5 +1,5 @@
 from flask import Blueprint
-from routes import (
+from controllers import (
     get_database_json,
     get_components,
     update_component_step,
