@@ -69,6 +69,11 @@ class User(BaseModel):
     address: Optional[Json]
     about_me: Optional[str]
 
+    @validator("email_address", pre=True)
+    def empty_string_to_none(cls, value):
+        if value:
+            return value
+
     @validator("password")
     def validate_password(cls, value: Optional[str]):
         if value:

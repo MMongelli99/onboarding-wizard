@@ -63,8 +63,8 @@ export function setCredentials({
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      email_address: email_address,
-      password: password,
+      email_address: email_address.trim(),
+      password: password.trim(),
     }),
   });
 }

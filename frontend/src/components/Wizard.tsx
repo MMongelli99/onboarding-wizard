@@ -56,7 +56,12 @@ export default function Wizard() {
       email_address: data.email_address || "",
       password: data.password || "",
       birthdate: data.birthdate || "",
-      address: data.address || { street: "", city: "", state: "", zip: "" },
+      address: data.address || {
+        street: "",
+        city: "",
+        state: "",
+        zip: "",
+      },
       about_me: data.about_me || "",
     });
   };
@@ -65,10 +70,18 @@ export default function Wizard() {
     if (!userId) return;
 
     const updates: Record<string, string> = {
-      email_address: formData.email_address,
-      password: formData.password,
+      email_address: formData.email_address.trim(),
+      password: formData.password.trim(),
       birthdate: formData.birthdate,
-      address: JSON.stringify(formData.address),
+      address: JSON.stringify(
+        // trim each address field
+        Object.fromEntries(
+          Object.entries(formData.address || {}).map(([key, value]) => [
+            key,
+            value.trim(),
+          ]),
+        ),
+      ),
       about_me: formData.about_me,
     };
 

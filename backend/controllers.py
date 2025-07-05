@@ -40,7 +40,11 @@ def create_user():
 def update_user(user_id):
     data = request.get_json(force=True)
     fields = User.get_database_fields()
-    updates = {field: data[field] for field in fields if field in data}
+    updates = {
+        field: data[field].strip()
+        for field in fields 
+        if field in data and isinstance(field, str)
+    }
 
     if not updates:
         return "", 400
