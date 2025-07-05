@@ -105,7 +105,32 @@ export default function Wizard() {
       getFormData({
         newUserID: id,
         onSuccess: populateForm,
-        onError: (err) => console.error("Failed to load form data", err),
+        onError: (err) => {
+          console.error("Failed to load form data", err);
+          localStorage.clear();
+          setStep(0);
+          setUserId(null);
+
+          // Create new user credentials
+          setCredentials({ email_address: "", password: "" })
+            .then((res) => res.json())
+            .then((data) => {
+              const newId = data.id;
+              setUserId(newId);
+              localStorage.setItem("user_id", String(newId));
+              updateUser({
+                userID: newId,
+                updates: {
+                  address: JSON.stringify({
+                    street: "",
+                    city: "",
+                    state: "",
+                    zip: "",
+                  }),
+                },
+              });
+            });
+        },
       });
     } else {
       setCredentials({ email_address: "", password: "" })
