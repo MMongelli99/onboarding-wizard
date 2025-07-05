@@ -1,9 +1,9 @@
 .direnv
 .envrc
 .venv
-frontend/node_modules
-backend/.venv
-backend/access.log
-backend/error.log
-backend/*db*
+node_modules
+.venv
+*.log
+*db*
 __pycache__
+*.bak

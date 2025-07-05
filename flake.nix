@@ -14,7 +14,6 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in {
         devShells.${system} = {
-          name = "zealthy";
           default = let
             backendHost = "localhost:8000";
             developmentInstance = pkgs.writeShellScriptBin "run-dev" ''
@@ -25,10 +24,9 @@
 
               function serve_frontend() {
                   cd frontend
-                  sudo true
-                  sudo npm install
+                  npm install
                   export VITE_BACKEND_API_BASE="http://${backendHost}"
-                  sudo -E npm run dev > /dev/null 2>&1 &
+                  npm run dev > /dev/null 2>&1 &
                   FRONTEND_PID=$!
                   cd ..
               }
@@ -54,6 +52,7 @@
             '';
           in
             pkgs.mkShell {
+              name = "onboarding-wizard";
               buildInputs = with pkgs; [
                 nodejs_24
                 python313
