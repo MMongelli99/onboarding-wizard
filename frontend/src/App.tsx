@@ -1,7 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import Wizard from "./components/Wizard";
-import DataViewer from "./components/DatabaseViewer";
-import Admin from "./components/Admin";
+import PageNotFound from "./components/PageNotFound";
 
 export default function App() {
   return (
@@ -18,13 +16,12 @@ export default function App() {
             Admin
           </Link>
         </nav>
-
         <div className="flex justify-center p-6">
           <Routes>
-            <Route path="/" element={<Wizard />} />
-            <Route path="/data" element={<DataViewer />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="*" element={<div>404: Page Not Found</div>} />
+            <Route path="/" element={<div>wizard</div>} />
+            <Route path="/data" element={<div>data viewer</div>} />
+            <Route path="/admin" element={<div>admin</div>} />
+            <Route path="*" element={<PageNotFound />} />
           </Routes>
         </div>
       </div>
