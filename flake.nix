@@ -25,7 +25,6 @@
               function serve_frontend() {
                   cd frontend
                   npm install
-                  export VITE_BACKEND_API_BASE="http://${backendHost}"
                   npm run dev > /dev/null 2>&1 &
                   FRONTEND_PID=$!
                   cd ..
@@ -37,7 +36,6 @@
                   python -m venv $VENV
                   source $VENV/bin/activate
                   pip install -r requirements.txt
-                  export FRONTEND_ORIGIN="http://localhost:5173"
                   gunicorn -b ${backendHost} --access-logfile access.log --error-logfile error.log app:app &
                   BACKEND_PID=$!
                   cd ..
@@ -59,8 +57,10 @@
                 sqlite
                 developmentInstance
               ];
-              FRONTEND_ORIGIN = "http://localhost:5173";
-              VITE_BACKEND_API_BASE = "http://localhost:8000";
+              env = {
+                FRONTEND_ORIGIN = "http://localhost:5173";
+                VITE_BACKEND_API_BASE = "http://localhost:8000";
+              };
             };
         };
       }
