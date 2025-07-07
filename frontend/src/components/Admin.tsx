@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Draggable, Droppable } from "./DragAndDrop";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
 import { getWizardComponents, updateWizardComponent } from "../services";
 
-// const DraggableComponent = ();
+type wizardComponentData = { wizardStepNumber: string };
 
 export default function Admin() {
   type WizardStepsConfig = Record<
@@ -51,18 +51,35 @@ export default function Admin() {
     } = event;
     if (!over || !active) return;
 
-    // wizard step numbers
-    const fromStep = active.id;
-    const toStep = over.id;
+    const draggedComponentName = String(active.id);
 
-    console.log("from", fromStep, "to", toStep);
+    // wizard step numbers
+    const fromStep = (active.data.current as unknown as wizardComponentData)
+      .wizardStepNumber;
+    const toStep = String(over.id);
 
     if (fromStep === toStep) return;
 
-    // setWizardSteps((prev) => {
-    //   const curr = prev;
-    //
-    // });
+    setWizardStepsConfig((prev: WizardStepsConfig) => {
+      const updated = { ...prev };
+
+      // remove component from previous wizard step
+      updated[fromStep] = updated[fromStep].filter(
+        (componentName) => componentName !== draggedComponentName,
+      );
+
+      // add component to new wizard step
+      updated[toStep] = [
+        ...new Set([...(updated[toStep] ?? []), draggedComponentName]),
+      ];
+
+      return updated;
+    });
+
+    updateWizardComponent({
+      kind: draggedComponentName,
+      step: Number(toStep),
+    }).catch((err) => console.error("Failed to update step", err));
   }
 
   return (
@@ -73,14 +90,15 @@ export default function Admin() {
       </h2>
       <ul>
         <li className="m-4">
-          • Drag and drop components between steps of the onboarding wizard.
+          &bull; Drag and drop components between steps of the onboarding
+          wizard.
         </li>
         <li className="m-4">
-          • Omit a component from the wizard by leaving it in the "Components"
-          area.
+          &bull; Omit a component from the wizard by leaving it in the
+          "Components" area.
         </li>
         <li className="m-4">
-          • Each step of the wizard must have one component.
+          &bull; Each step of the wizard must have one component.
         </li>
       </ul>
       <DndContext onDragEnd={handleDragEnd}>
@@ -96,6 +114,11 @@ export default function Admin() {
                         displayName={componentName}
                         key={componentName}
                         id={componentName}
+                        data={
+                          {
+                            wizardStepNumber: String(unusedComponentsKey),
+                          } as wizardComponentData
+                        }
                       ></Draggable>
                     ),
                   ),
@@ -124,6 +147,11 @@ export default function Admin() {
                             key={componentName}
                             id={componentName}
                             disabled={isOnlyComponentInWizardStep}
+                            data={
+                              {
+                                wizardStepNumber: wizardStepNumber,
+                              } as wizardComponentData
+                            }
                           ></Draggable>
                         );
                       },

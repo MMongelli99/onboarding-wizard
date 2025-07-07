@@ -1,23 +1,21 @@
-import {
-  DndContext,
-  useDraggable,
-  useDroppable,
-  DragEndEvent,
-} from "@dnd-kit/core";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 
 export function Draggable({
   displayName,
   id,
   disabled = false,
+  data,
 }: {
   displayName?: string;
   id: string;
   disabled?: boolean;
+  data?: Record<string, unknown>;
 }) {
   // an item which can be dragged into a Droppable container
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id,
     disabled,
+    data: data,
   });
   const style = {
     transform: transform
@@ -55,9 +53,9 @@ export function Droppable({
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-[100px] p-4 m-2 rounded border border-dashed border-gray-500 ${bgColor}`}
+      className={`min-h-[90px] p-4 m-2 rounded border border-dashed border-gray-500 ${bgColor}`}
     >
-      <p className="font-semibold mb-2">{displayName ?? ""}</p>
+      {displayName && <p className="font-semibold mb-2">{displayName}</p>}
       {children}
     </div>
   );
