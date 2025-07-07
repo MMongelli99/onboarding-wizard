@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import PageNotFound from "./components/PageNotFound";
 import DatabaseViewer from "./components/DatabaseViewer";
+import Admin from "./components/Admin";
 
 export default function App() {
   return (
@@ -21,7 +22,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<div>wizard</div>} />
             <Route path="/data" element={<DatabaseViewer />} />
-            <Route path="/admin" element={<div>admin</div>} />
+            <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<PageNotFound />} />
           </Routes>
         </div>
