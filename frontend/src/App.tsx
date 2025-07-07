@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import PageNotFound from "./components/PageNotFound";
+import DatabaseViewer from "./components/DatabaseViewer";
 
 export default function App() {
   return (
@@ -19,7 +20,7 @@ export default function App() {
         <div className="flex justify-center p-6">
           <Routes>
             <Route path="/" element={<div>wizard</div>} />
-            <Route path="/data" element={<div>data viewer</div>} />
+            <Route path="/data" element={<DatabaseViewer />} />
             <Route path="/admin" element={<div>admin</div>} />
             <Route path="*" element={<PageNotFound />} />
           </Routes>
