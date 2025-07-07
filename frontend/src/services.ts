@@ -44,7 +44,7 @@ export function updateUser({
 }: {
   userID: number;
   updates: Record<string, string | number>;
-}): Promise {
+}): Promise<Response> {
   return fetch(`${BACKEND_API_BASE}/api/users/${userID}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -58,7 +58,7 @@ export function setCredentials({
 }: {
   email_address: string;
   password: string;
-}): Promise {
+}): Promise<Response> {
   return fetch(`${BACKEND_API_BASE}/api/users`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -75,7 +75,7 @@ export function updateWizardComponent({
 }: {
   kind: string;
   step: number | null;
-}): Promise {
+}): Promise<Response> {
   return fetch(`${BACKEND_API_BASE}/api/components/${kind}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },

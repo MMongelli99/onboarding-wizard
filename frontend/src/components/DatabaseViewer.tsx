@@ -1,15 +1,6 @@
 import { useState, useEffect } from "react";
 import { getDatabaseTables } from "../services";
-
-type TableName = string;
-type ColumnName = string;
-type Table = {
-  columns: ColumnName[];
-  rows: Row[];
-};
-type Row = Record<ColumnName, unknown>;
-
-type Database = Record<TableName, Table>;
+import type { Database } from "../../types/database";
 
 export default function DatabaseViewer() {
   const [data, setData] = useState<Database | null>(null);
@@ -17,7 +8,7 @@ export default function DatabaseViewer() {
 
   useEffect(() => {
     getDatabaseTables({
-      onSuccess: setData,
+      onSuccess: (data) => setData(data as Database),
       onError: (errMsg) => setError(errMsg),
     });
   }, []);
@@ -61,7 +52,7 @@ export default function DatabaseViewer() {
                             key={cellIdx}
                             className="px-4 py-2 border-b border-gray-600"
                           >
-                            {row[columnName] ?? ""}
+                            {String(row[columnName] ?? "")}
                           </td>
                         ))}
                       </tr>
