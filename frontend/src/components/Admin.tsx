@@ -10,7 +10,7 @@ export default function Admin() {
     string, // wizard step number
     string[] // components present in step of wizard
   >;
-  const unusedComponentsKey = 0;
+  const unusedComponentsKey = -1;
   const wizardStepsConfigInit = {
     [unusedComponentsKey]: [] as string[], // unused components
   };
