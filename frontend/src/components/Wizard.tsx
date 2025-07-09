@@ -1,6 +1,97 @@
 import { useState, useEffect } from "react";
 import { createUser, getFormData } from "../services";
 
+type Field =
+  | "email_address"
+  | "password"
+  | "birthdate"
+  | "address"
+  | "about_me";
+
+function FieldInput({ field }: { field: Field }) {
+  const [value, setValue] = useState<string>("");
+  return (
+    <div className="mb-4">
+      <p className="text-red-500 text-sm mb-1">
+        Please enter a valid email address
+      </p>
+      <input
+        type="email"
+        placeholder="email address"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+  );
+}
+
+export function WizardStep({
+  title,
+  description,
+  fields = [],
+}: {
+  title?: string;
+  description?: string;
+  fields?: Field[];
+}) {
+  return (
+    <div>
+      {title && <h1 className="text-2xl font-semibold mb-2">{title}</h1>}
+      {description && <p className="text-gray-400 mb-6">{description}</p>}
+      <div className="space-y-4 mb-6">
+        {fields.map((field, idx) => (
+          <FieldInput key={idx} field={field} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProgressBar({ width }: { width: number }) {
+  return (
+    <div className="w-full h-1 bg-gray-700 rounded">
+      <div
+        className="h-1 bg-blue-500 rounded transition-all duration-300"
+        style={{
+          width: `${width}%`,
+        }}
+      />
+    </div>
+  );
+}
+
+type WizardSteps = {
+  children:
+    | React.ReactElement<typeof WizardStep>
+    | React.ReactElement<typeof WizardStep>[];
+};
+
+export function Wizard({ children }: WizardSteps) {
+  const [canSubmit, setCanSubmit] = useState<boolean>(false);
+  return (
+    <div className="bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md">
+      {children}
+      <div className="flex items-center">
+        <button className="px-6 py-2 rounded transition bg-blue-500 hover:bg-blue-600 text-white">
+          Back
+        </button>
+        <div className="flex-grow" />
+        <button
+          className="px-6 py-2 rounded transition bg-blue-500 hover:bg-blue-600 text-white"
+          onClick={() => console.log(canSubmit)}
+        >
+          Next
+        </button>
+      </div>
+      <div className="mt-6">
+        <ProgressBar width={50} />
+      </div>
+    </div>
+  );
+}
+
+/*
 type Address = {
   street: string;
   city: string;
@@ -26,8 +117,16 @@ const wizardDataInit = {
   about_me: "",
 };
 
-function getWizardStepNumber(): number {
-  return Number(localStorage.getItem("wizard_step") ?? 1);
+function getWizardStepIndex(): number {
+  return Number(localStorage.getItem("wizard_step") ?? 0);
+}
+
+function setWizardStepIndex(index: number): void {
+  localStorage.setItem("wizard_step", String(index));
+}
+
+function getUserId(): number {
+  return Number(localStorage.getItem("user_id"));
 }
 
 type FieldType = "email" | "text" | "password";
@@ -47,17 +146,17 @@ function FormField({
   errorMessage,
   validate,
   onValidityChange,
-  userId,
 }: FormFieldConfig & {
   onValidityChange: (valid: boolean) => void;
-  userId: number;
 }) {
   const [value, setValue] = useState("");
   const [invalid, setInvalid] = useState(false);
 
+  const userId = getUserId();
+
   useEffect(() => {
     getFormData({
-      userId,
+      userId: userId,
       onSuccess: (data: unknown) => {
         const userData = data as WizardData;
         const dbValue: string = (userData[dbFieldName] ?? "") as string;
@@ -98,20 +197,15 @@ function WizardStep({
   title,
   description,
   fields,
-  handleBack,
-  handleNext,
   isFirstStep,
   isLastStep,
-  userId,
 }: {
   title: string;
   description: string;
   fields: FormFieldConfig[];
   isFirstStep: boolean;
   isLastStep: boolean;
-  handleBack?: () => void;
-  handleNext?: () => void;
-  userId: number;
+  onStepChange?: () => void;
 }) {
   const [fieldValidities, setFieldValidities] = useState<boolean[]>(
     Array(fields.length).fill(false),
@@ -126,6 +220,17 @@ function WizardStep({
   };
 
   const allValid = fieldValidities.every(Boolean);
+  const userId = getUserId();
+
+  function handleNext() {
+    setWizardStepIndex(getWizardStepIndex() + 1);
+    console.log(getWizardStepIndex());
+  }
+
+  function handleBack() {
+    setWizardStepIndex(getWizardStepIndex() - 1);
+    console.log(getWizardStepIndex());
+  }
 
   return (
     <div>
@@ -137,7 +242,6 @@ function WizardStep({
           <FormField
             key={i}
             {...field}
-            userId={userId}
             onValidityChange={(v) => updateFieldValidity(i, v)}
           />
         ))}
@@ -179,16 +283,16 @@ function ProgressBar({ width }: { width: number }) {
   );
 }
 
-export default function Wizard() {
-  const [wizardData, setWizardData] = useState<WizardData>(wizardDataInit);
+function CreateWizard({ wizardSteps }: { wizardSteps: React.ReactElement[] }) {
+  // const [wizardData, setWizardData] = useState<WizardData>(wizardDataInit);
 
   const [userId, setUserId] = useState<number | null>(null);
 
-  const [wizardStepNumber, setWizardStepNumber] =
-    useState<number>(getWizardStepNumber);
+  const [wizardStepIndex, setWizardStepIndex] =
+    useState<number>(getWizardStepIndex);
 
   const [progressPercentage, setProgressPercentage] = useState<number>(0);
-  /*((step + 1) / orderedSteps.length) * 100}*/
+  ((step + 1) / orderedSteps.length) * 100}
 
   useEffect(() => {
     const existingUserId = localStorage.getItem("user_id");
@@ -215,33 +319,47 @@ export default function Wizard() {
 
   return (
     <div className="bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md">
-      <WizardStep
-        title="Credentials"
-        description="Enter your credentials."
-        isFirstStep={true}
-        isLastStep={true}
-        handleNext={() => console.log("next")}
-        userId={userId}
-        fields={[
-          {
-            type: "email",
-            placeholder: "Email address",
-            dbFieldName: "email_address",
-            errorMessage: "Please enter a valid email",
-            validate: (val) => /\S+@\S+\.\S+/.test(val),
-          },
-          {
-            type: "password",
-            placeholder: "Password",
-            dbFieldName: "password",
-            errorMessage: "Please enter a password",
-            validate: (val) => val.length > 0,
-          },
-        ]}
-      />
+      {wizardSteps[wizardStepIndex]}
       <div className="mt-6">
         <ProgressBar width={progressPercentage} />
       </div>
     </div>
   );
 }
+
+export default function Wizard() {
+  const wizardSteps: React.ReactElement[] = [
+    <WizardStep
+      title="Credentials"
+      description="Enter your credentials."
+      isFirstStep={true}
+      isLastStep={false}
+      fields={[
+        {
+          type: "email",
+          placeholder: "Email address",
+          dbFieldName: "email_address",
+          errorMessage: "Please enter a valid email",
+          validate: (val) => /\S+@\S+\.\S+/.test(val),
+        },
+        {
+          type: "password",
+          placeholder: "Password",
+          dbFieldName: "password",
+          errorMessage: "Please enter a password",
+          validate: (val) => val.length > 0,
+        },
+      ]}
+    />,
+    <WizardStep
+      title="hi"
+      description="yo"
+      isFirstStep={false}
+      isLastStep={true}
+      fields={[]}
+    />,
+  ];
+
+  return <CreateWizard wizardSteps={wizardSteps} />;
+}
+*/

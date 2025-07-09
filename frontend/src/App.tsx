@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import PageNotFound from "./components/PageNotFound";
 import DatabaseViewer from "./components/DatabaseViewer";
 import Admin from "./components/Admin";
-import Wizard from "./components/Wizard";
+import { Wizard, WizardStep } from "./components/Wizard";
 
 export default function App() {
   return (
@@ -21,7 +21,18 @@ export default function App() {
         </nav>
         <div className="flex justify-center p-6">
           <Routes>
-            <Route path="/" element={<Wizard />} />
+            <Route
+              path="/"
+              element={
+                <Wizard>
+                  <WizardStep
+                    title="hi"
+                    description="hello"
+                    fields={["email_address", "password"]}
+                  />
+                </Wizard>
+              }
+            />
             <Route path="/data" element={<DatabaseViewer />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<PageNotFound />} />
