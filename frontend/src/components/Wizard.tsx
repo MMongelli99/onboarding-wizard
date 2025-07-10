@@ -1,6 +1,6 @@
 import { useState, useContext, useEffect } from "react";
 import { createUser, getFormData } from "../services";
-import { WizardContext } from "../contexts/WizardContext";
+import { WizardContext, FieldInputValidities } from "../contexts/WizardContext";
 
 type Field =
   | "email_address"
@@ -29,14 +29,17 @@ const fieldInitializers: Record<string, FieldInitializer> = {
 };
 
 function FieldInput({ field }: { field: Field }) {
+  const context = useContext(WizardContext);
+  if (!context) throw new Error("WizardContext not available");
+
+  const { fieldInputValidities, setFieldInputValidities } = context;
+
   const fieldInitializer = fieldInitializers[field];
 
   const [value, setValue] = useState<string>("");
   const [isValid, setIsValid] = useState<boolean>(
     fieldInitializer.isValid(value),
   );
-  // const fieldInputValidities = useContext(WizardContext);
-  // const setFieldInputValidities = useContext(WizardContext);
 
   return (
     <div className="mb-4">
@@ -54,10 +57,10 @@ function FieldInput({ field }: { field: Field }) {
           const updatedValidity = fieldInitializer.isValid(updatedValue);
           setValue(updatedValue);
           setIsValid(updatedValidity);
-          // setFieldInputValidities((prev) => ({
-          //   ...prev,
-          //  [field]: updatedValidity,
-          // }));
+          setFieldInputValidities({
+            ...fieldInputValidities,
+            [field]: updatedValidity,
+          });
         }}
         className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
@@ -93,7 +96,7 @@ function ProgressBar({ width }: { width: number }) {
       <div
         className="h-1 bg-blue-500 rounded transition-all duration-300"
         style={{
-          width: `${width}%`,
+          width: `${width * 100}%`,
         }}
       />
     </div>
@@ -110,15 +113,15 @@ export function Wizard({ children }: WizardSteps) {
   const wizardSteps = Array.isArray(children) ? children : [children];
 
   const [userId, setUserId] = useState<number | null>(null);
-  // const [fieldInputValidities, setFieldInputValidities] = useState<
-  //   Record<string, boolean>[]
-  // >({ email_address: false, password: false });
+
+  const [fieldInputValidities, setFieldInputValidities] =
+    useState<FieldInputValidities>({});
 
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
 
-  // useEffect(() => {
-  //   setCanSubmit(Object.values(fieldInputValidities).every(Boolean));
-  // }, [fieldInputValidities]);
+  useEffect(() => {
+    setCanSubmit(Object.values(fieldInputValidities).every(Boolean));
+  }, [fieldInputValidities]);
 
   // reset user's local storage if "user not foun error"
 
@@ -163,8 +166,8 @@ export function Wizard({ children }: WizardSteps) {
       value={{
         userId,
         setUserId,
-        // fieldInputValidities,
-        // setFieldInputValidities,
+        fieldInputValidities,
+        setFieldInputValidities,
         wizardStepIndex,
         setWizardStepIndex,
       }}
@@ -176,6 +179,7 @@ export function Wizard({ children }: WizardSteps) {
             <button
               className="px-6 py-2 rounded transition bg-blue-500 hover:bg-blue-600 text-white"
               disabled={!canSubmit}
+              onClick={() => setWizardStepIndex(wizardStepIndex - 1)}
             >
               Back
             </button>
@@ -187,14 +191,7 @@ export function Wizard({ children }: WizardSteps) {
                 canSubmit ? "text-white" : "text-gray-500"
               }`}
               disabled={!canSubmit}
-              onClick={() =>
-                console.log(
-                  userId,
-                  // fieldInputValidities,
-                  Number(localStorage.getItem("wizard_step_index")),
-                  wizardSteps.length,
-                )
-              }
+              onClick={() => setWizardStepIndex(wizardStepIndex + 1)}
             >
               Next
             </button>
