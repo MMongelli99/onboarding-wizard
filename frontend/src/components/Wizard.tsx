@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useContext, useEffect } from "react";
 import { createUser, getFormData } from "../services";
+import { WizardContext } from "../contexts/WizardContext";
 
 type Field =
   | "email_address"
@@ -8,18 +9,56 @@ type Field =
   | "address"
   | "about_me";
 
+type FieldInitializer = {
+  type: string;
+  errorMessage: string;
+  isValid: (value: string) => boolean;
+};
+
+const fieldInitializers: Record<string, FieldInitializer> = {
+  email_address: {
+    type: "email",
+    errorMessage: "Please enter a valid email address",
+    isValid: (value: string) => /\S+@\S+\.\S+/.test(value),
+  },
+  password: {
+    type: "password",
+    errorMessage: "Please enter a password",
+    isValid: (value: string) => value !== "",
+  },
+};
+
 function FieldInput({ field }: { field: Field }) {
+  const fieldInitializer = fieldInitializers[field];
+
   const [value, setValue] = useState<string>("");
+  const [isValid, setIsValid] = useState<boolean>(
+    fieldInitializer.isValid(value),
+  );
+  // const fieldInputValidities = useContext(WizardContext);
+  // const setFieldInputValidities = useContext(WizardContext);
+
   return (
     <div className="mb-4">
-      <p className="text-red-500 text-sm mb-1">
-        Please enter a valid email address
-      </p>
+      {!isValid && (
+        <p className="text-red-500 text-sm mb-1">
+          {fieldInitializer.errorMessage}
+        </p>
+      )}
       <input
-        type="email"
+        type={fieldInitializer.type}
         placeholder="email address"
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => {
+          const updatedValue = e.target.value;
+          const updatedValidity = fieldInitializer.isValid(updatedValue);
+          setValue(updatedValue);
+          setIsValid(updatedValidity);
+          // setFieldInputValidities((prev) => ({
+          //   ...prev,
+          //  [field]: updatedValidity,
+          // }));
+        }}
         className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
     </div>
@@ -68,26 +107,104 @@ type WizardSteps = {
 };
 
 export function Wizard({ children }: WizardSteps) {
+  const wizardSteps = Array.isArray(children) ? children : [children];
+
+  const [userId, setUserId] = useState<number | null>(null);
+  // const [fieldInputValidities, setFieldInputValidities] = useState<
+  //   Record<string, boolean>[]
+  // >({ email_address: false, password: false });
+
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
+
+  // useEffect(() => {
+  //   setCanSubmit(Object.values(fieldInputValidities).every(Boolean));
+  // }, [fieldInputValidities]);
+
+  // reset user's local storage if "user not foun error"
+
+  const localStorageKeys = {
+    userId: "user_id",
+    wizardStepIndex: "wizard_step_index",
+  };
+
+  useEffect(() => {
+    const userId = localStorage.getItem(localStorageKeys.userId);
+    if (userId) {
+      setUserId(Number(userId));
+    } else {
+      createUser()
+        .then((res) => res.json())
+        .then((data) => {
+          const userId = data.id;
+          localStorage.setItem(localStorageKeys.userId, userId);
+          setUserId(userId);
+        })
+        .catch((err) => {
+          console.error("Failed to create user:", err);
+        });
+    }
+  }, []);
+
+  const [wizardStepIndex, setWizardStepIndex] = useState<number>(
+    userId &&
+      Number(localStorage.getItem(localStorageKeys.wizardStepIndex)) <
+        wizardSteps.length - 1
+      ? Number(localStorage.getItem(localStorageKeys.wizardStepIndex))
+      : 0,
+  );
+
+  localStorage.setItem(
+    localStorageKeys.wizardStepIndex,
+    String(wizardStepIndex),
+  );
+
   return (
-    <div className="bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md">
-      {children}
-      <div className="flex items-center">
-        <button className="px-6 py-2 rounded transition bg-blue-500 hover:bg-blue-600 text-white">
-          Back
-        </button>
-        <div className="flex-grow" />
-        <button
-          className="px-6 py-2 rounded transition bg-blue-500 hover:bg-blue-600 text-white"
-          onClick={() => console.log(canSubmit)}
-        >
-          Next
-        </button>
+    <WizardContext.Provider
+      value={{
+        userId,
+        setUserId,
+        // fieldInputValidities,
+        // setFieldInputValidities,
+        wizardStepIndex,
+        setWizardStepIndex,
+      }}
+    >
+      <div className="bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md">
+        {wizardSteps[wizardStepIndex]}
+        <div className="flex items-center">
+          {wizardStepIndex > 0 && (
+            <button
+              className="px-6 py-2 rounded transition bg-blue-500 hover:bg-blue-600 text-white"
+              disabled={!canSubmit}
+            >
+              Back
+            </button>
+          )}
+          <div className="flex-grow" />
+          {wizardStepIndex < wizardSteps.length - 1 && (
+            <button
+              className={`px-6 py-2 rounded transition bg-blue-500 hover:bg-blue-600 ${
+                canSubmit ? "text-white" : "text-gray-500"
+              }`}
+              disabled={!canSubmit}
+              onClick={() =>
+                console.log(
+                  userId,
+                  // fieldInputValidities,
+                  Number(localStorage.getItem("wizard_step_index")),
+                  wizardSteps.length,
+                )
+              }
+            >
+              Next
+            </button>
+          )}
+        </div>
+        <div className="mt-6">
+          <ProgressBar width={wizardStepIndex / wizardSteps.length} />
+        </div>
       </div>
-      <div className="mt-6">
-        <ProgressBar width={50} />
-      </div>
-    </div>
+    </WizardContext.Provider>
   );
 }
 

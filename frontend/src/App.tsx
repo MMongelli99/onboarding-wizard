@@ -30,6 +30,7 @@ export default function App() {
                     description="hello"
                     fields={["email_address", "password"]}
                   />
+                  <WizardStep title="hi" description="hello" />
                 </Wizard>
               }
             />
