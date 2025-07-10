@@ -1,6 +1,10 @@
 import { useState, useContext, useEffect } from "react";
-import { createUser, getFormData } from "../services";
-import { WizardContext, FieldInputValidities } from "../contexts/WizardContext";
+import { createUser, getFormData, updateUser } from "../services";
+import {
+  WizardContext,
+  FieldInputValues,
+  FieldInputValidities,
+} from "../contexts/WizardContext";
 
 type Field =
   | "email_address"
@@ -35,7 +39,13 @@ function FieldInput({ field }: { field: Field }) {
   const context = useContext(WizardContext);
   if (!context) throw new Error("WizardContext not available");
 
-  const { userId, fieldInputValidities, setFieldInputValidities } = context;
+  const {
+    userId,
+    fieldInputValues,
+    setFieldInputValues,
+    fieldInputValidities,
+    setFieldInputValidities,
+  } = context;
 
   const fieldInitializer = fieldInitializers[field];
 
@@ -80,6 +90,10 @@ function FieldInput({ field }: { field: Field }) {
           const updatedValidity = fieldInitializer.isValid(updatedValue);
           setValue(updatedValue);
           setIsValid(updatedValidity);
+          setFieldInputValues({
+            ...fieldInputValues,
+            [field]: updatedValue,
+          });
           setFieldInputValidities({
             ...fieldInputValidities,
             [field]: updatedValidity,
@@ -107,8 +121,9 @@ export function WizardStep({
       "WizardContext is undefined. Make sure your component is wrapped in a <WizardContext.Provider>.",
     );
   }
-  const { setFieldInputValidities } = context;
+  const { setFieldInputValues, setFieldInputValidities } = context;
   useEffect(() => {
+    setFieldInputValues({});
     setFieldInputValidities({});
   }, []);
   return (
@@ -150,6 +165,10 @@ export function Wizard({ children }: WizardSteps) {
 
   const [fieldInputValidities, setFieldInputValidities] =
     useState<FieldInputValidities>({});
+
+  const [fieldInputValues, setFieldInputValues] = useState<FieldInputValues>(
+    {},
+  );
 
   const localStorageKeys = {
     userId: "user_id",
@@ -218,6 +237,8 @@ export function Wizard({ children }: WizardSteps) {
       value={{
         userId,
         setUserId,
+        fieldInputValues,
+        setFieldInputValues,
         fieldInputValidities,
         setFieldInputValidities,
         wizardStepIndex,
@@ -230,8 +251,14 @@ export function Wizard({ children }: WizardSteps) {
           {wizardStepIndex > 0 && (
             <button
               className="px-6 py-2 rounded transition bg-blue-500 hover:bg-blue-600 text-white"
-              disabled={!canSubmit}
-              onClick={() => setWizardStepIndex(wizardStepIndex - 1)}
+              disabled={userId !== null && !canSubmit}
+              onClick={() => {
+                if (userId) {
+                  const nonNullUserId = userId as number;
+                  updateUser({ userId, updates: fieldInputValues });
+                  setWizardStepIndex(wizardStepIndex - 1);
+                }
+              }}
             >
               Back
             </button>
@@ -242,8 +269,14 @@ export function Wizard({ children }: WizardSteps) {
               className={`px-6 py-2 rounded transition bg-blue-500 hover:bg-blue-600 ${
                 canSubmit ? "text-white" : "text-gray-500"
               }`}
-              disabled={!canSubmit}
-              onClick={() => setWizardStepIndex(wizardStepIndex + 1)}
+              disabled={userId !== null && !canSubmit}
+              onClick={() => {
+                if (userId) {
+                  const nonNullUserId = userId as number;
+                  updateUser({ userId, updates: fieldInputValues });
+                  setWizardStepIndex(wizardStepIndex + 1);
+                }
+              }}
             >
               Next
             </button>
