@@ -11,6 +11,7 @@ type Field =
 
 type FieldInitializer = {
   type: string;
+  placeholder: string;
   errorMessage: string;
   isValid: (value: string) => boolean;
 };
@@ -18,11 +19,13 @@ type FieldInitializer = {
 const fieldInitializers: Record<string, FieldInitializer> = {
   email_address: {
     type: "email",
+    placeholder: "email address",
     errorMessage: "Please enter a valid email address",
     isValid: (value: string) => /\S+@\S+\.\S+/.test(value),
   },
   password: {
     type: "password",
+    placeholder: "password",
     errorMessage: "Please enter a password",
     isValid: (value: string) => value !== "",
   },
@@ -32,14 +35,34 @@ function FieldInput({ field }: { field: Field }) {
   const context = useContext(WizardContext);
   if (!context) throw new Error("WizardContext not available");
 
-  const { fieldInputValidities, setFieldInputValidities } = context;
+  const { userId, fieldInputValidities, setFieldInputValidities } = context;
 
   const fieldInitializer = fieldInitializers[field];
 
   const [value, setValue] = useState<string>("");
+
   const [isValid, setIsValid] = useState<boolean>(
     fieldInitializer.isValid(value),
   );
+
+  useEffect(() => {
+    if (userId) {
+      getFormData({
+        userId: userId as number,
+        onSuccess: (data) => {
+          const storedValues = data as Record<string, unknown>;
+          const storedValue = storedValues[field]
+            ? String(storedValues[field])
+            : "";
+          setValue(storedValue);
+          setIsValid(fieldInitializer.isValid(storedValue));
+        },
+        onError: (errMsg) => {
+          console.log(`Failed to load data for "${field}" field:`, errMsg);
+        },
+      });
+    }
+  }, [userId]);
 
   return (
     <div className="mb-4">
@@ -50,7 +73,7 @@ function FieldInput({ field }: { field: Field }) {
       )}
       <input
         type={fieldInitializer.type}
-        placeholder="email address"
+        placeholder={fieldInitializer.placeholder}
         value={value}
         onChange={(e) => {
           const updatedValue = e.target.value;
@@ -77,6 +100,17 @@ export function WizardStep({
   description?: string;
   fields?: Field[];
 }) {
+  const context = useContext(WizardContext);
+
+  if (!context) {
+    throw new Error(
+      "WizardContext is undefined. Make sure your component is wrapped in a <WizardContext.Provider>.",
+    );
+  }
+  const { setFieldInputValidities } = context;
+  useEffect(() => {
+    setFieldInputValidities({});
+  }, []);
   return (
     <div>
       {title && <h1 className="text-2xl font-semibold mb-2">{title}</h1>}
@@ -117,24 +151,17 @@ export function Wizard({ children }: WizardSteps) {
   const [fieldInputValidities, setFieldInputValidities] =
     useState<FieldInputValidities>({});
 
-  const [canSubmit, setCanSubmit] = useState<boolean>(false);
-
-  useEffect(() => {
-    setCanSubmit(Object.values(fieldInputValidities).every(Boolean));
-  }, [fieldInputValidities]);
-
-  // reset user's local storage if "user not foun error"
-
   const localStorageKeys = {
     userId: "user_id",
     wizardStepIndex: "wizard_step_index",
   };
 
   useEffect(() => {
-    const userId = localStorage.getItem(localStorageKeys.userId);
-    if (userId) {
-      setUserId(Number(userId));
-    } else {
+    const storedUserId = localStorage.getItem(localStorageKeys.userId)
+      ? Number(localStorage.getItem(localStorageKeys.userId))
+      : null;
+
+    function createAndStoreUserId(): void {
       createUser()
         .then((res) => res.json())
         .then((data) => {
@@ -146,7 +173,32 @@ export function Wizard({ children }: WizardSteps) {
           console.error("Failed to create user:", err);
         });
     }
+
+    if (storedUserId) {
+      getFormData({
+        userId: storedUserId,
+        onSuccess: () => {
+          localStorage.setItem(localStorageKeys.userId, String(storedUserId));
+          setUserId(storedUserId);
+        },
+        onError: () => {
+          createAndStoreUserId();
+        },
+      });
+    } else {
+      createAndStoreUserId();
+    }
   }, []);
+
+  const [canSubmit, setCanSubmit] = useState<boolean>(false);
+
+  useEffect(() => {
+    setCanSubmit(
+      Object.keys(fieldInputValidities).length === 0
+        ? false
+        : Object.values(fieldInputValidities).every(Boolean),
+    );
+  }, [fieldInputValidities]);
 
   const [wizardStepIndex, setWizardStepIndex] = useState<number>(
     userId &&
