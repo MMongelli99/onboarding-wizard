@@ -6,21 +6,29 @@ import {
   FieldInputValidities,
 } from "../contexts/WizardContext";
 
-type Field =
+export type Field =
   | "email_address"
   | "password"
   | "birthdate"
   | "address"
   | "about_me";
 
+type FieldType =
+  | "text"
+  | "textarea"
+  | "email"
+  | "password"
+  | "date"
+  | "address";
+
 type FieldInitializer = {
-  type: string;
-  placeholder: string;
+  type: FieldType;
+  placeholder?: string;
   errorMessage: string;
   isValid: (value: string) => boolean;
 };
 
-const fieldInitializers: Record<string, FieldInitializer> = {
+const fieldInitializers: Record<Field, FieldInitializer> = {
   email_address: {
     type: "email",
     placeholder: "email address",
@@ -31,6 +39,22 @@ const fieldInitializers: Record<string, FieldInitializer> = {
     type: "password",
     placeholder: "password",
     errorMessage: "Please enter a password",
+    isValid: (value: string) => value !== "",
+  },
+  birthdate: {
+    type: "date",
+    errorMessage: "Please enter your date of birth",
+    isValid: (value: string) => value !== "",
+  },
+  address: {
+    type: "text",
+    errorMessage: "Please enter your address",
+    isValid: (value: string) => value !== "",
+  },
+  about_me: {
+    type: "textarea",
+    placeholder: "about you...",
+    errorMessage: "Please tell us about yourself",
     isValid: (value: string) => value !== "",
   },
 };
@@ -64,8 +88,17 @@ function FieldInput({ field }: { field: Field }) {
           const storedValue = storedValues[field]
             ? String(storedValues[field])
             : "";
+          const storedValidity = fieldInitializer.isValid(storedValue);
           setValue(storedValue);
-          setIsValid(fieldInitializer.isValid(storedValue));
+          setIsValid(storedValidity);
+          setFieldInputValues({
+            ...fieldInputValues,
+            [field]: storedValue,
+          });
+          setFieldInputValidities({
+            ...fieldInputValidities,
+            [field]: storedValidity,
+          });
         },
         onError: (errMsg) => {
           console.log(`Failed to load data for "${field}" field:`, errMsg);
@@ -74,6 +107,57 @@ function FieldInput({ field }: { field: Field }) {
     }
   }, [userId]);
 
+  function createFieldInputElement({
+    fieldInitializer,
+    valueInitializer,
+  }: {
+    fieldInitializer: FieldInitializer;
+    valueInitializer: string;
+  }) {
+    function onChange(
+      event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    ) {
+      const updatedValue = event.target.value;
+      const updatedValidity = fieldInitializer.isValid(updatedValue);
+      setValue(updatedValue);
+      setIsValid(updatedValidity);
+      setFieldInputValues({
+        ...fieldInputValues,
+        [field]: updatedValue,
+      });
+      setFieldInputValidities({
+        ...fieldInputValidities,
+        [field]: updatedValidity,
+      });
+    }
+
+    if (["email", "password", "text", "date"].includes(fieldInitializer.type)) {
+      return (
+        <input
+          type={fieldInitializer.type}
+          placeholder={fieldInitializer.placeholder}
+          value={valueInitializer}
+          onChange={onChange}
+          className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      );
+    }
+
+    if (["textarea"].includes(fieldInitializer.type)) {
+      return (
+        <div className="flex flex-col">
+          <span className="m-2">About Me</span>
+          <textarea
+            value={valueInitializer}
+            onChange={onChange}
+            placeholder="Tell us about yourself..."
+            className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      );
+    }
+  }
+
   return (
     <div className="mb-4">
       {!isValid && (
@@ -81,26 +165,7 @@ function FieldInput({ field }: { field: Field }) {
           {fieldInitializer.errorMessage}
         </p>
       )}
-      <input
-        type={fieldInitializer.type}
-        placeholder={fieldInitializer.placeholder}
-        value={value}
-        onChange={(e) => {
-          const updatedValue = e.target.value;
-          const updatedValidity = fieldInitializer.isValid(updatedValue);
-          setValue(updatedValue);
-          setIsValid(updatedValidity);
-          setFieldInputValues({
-            ...fieldInputValues,
-            [field]: updatedValue,
-          });
-          setFieldInputValidities({
-            ...fieldInputValidities,
-            [field]: updatedValidity,
-          });
-        }}
-        className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
+      {createFieldInputElement({ fieldInitializer, valueInitializer: value })}
     </div>
   );
 }
@@ -283,7 +348,7 @@ export function Wizard({ children }: WizardSteps) {
           )}
         </div>
         <div className="mt-6">
-          <ProgressBar width={wizardStepIndex / wizardSteps.length} />
+          <ProgressBar width={(wizardStepIndex + 1) / wizardSteps.length} />
         </div>
       </div>
     </WizardContext.Provider>
