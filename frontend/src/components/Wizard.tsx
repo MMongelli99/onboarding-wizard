@@ -228,12 +228,7 @@ export function Wizard({ children }: WizardSteps) {
 
   const [userId, setUserId] = useState<number | null>(null);
 
-  const [fieldInputValidities, setFieldInputValidities] =
-    useState<FieldInputValidities>({});
-
-  const [fieldInputValues, setFieldInputValues] = useState<FieldInputValues>(
-    {},
-  );
+  const [wizardStepIndex, setWizardStepIndex] = useState<number | null>(0);
 
   const localStorageKeys = {
     userId: "user_id",
@@ -241,9 +236,10 @@ export function Wizard({ children }: WizardSteps) {
   };
 
   useEffect(() => {
-    const storedUserId = localStorage.getItem(localStorageKeys.userId)
-      ? Number(localStorage.getItem(localStorageKeys.userId))
-      : null;
+    const storedUserId =
+      localStorage.getItem(localStorageKeys.userId) !== null
+        ? Number(localStorage.getItem(localStorageKeys.userId))
+        : null;
 
     function createAndStoreUserId(): void {
       createUser()
@@ -258,7 +254,7 @@ export function Wizard({ children }: WizardSteps) {
         });
     }
 
-    if (storedUserId) {
+    if (storedUserId !== null) {
       getFormData({
         userId: storedUserId,
         onSuccess: () => {
@@ -272,7 +268,30 @@ export function Wizard({ children }: WizardSteps) {
     } else {
       createAndStoreUserId();
     }
+
+    const storedWizardStepIndex =
+      localStorage.getItem(localStorageKeys.wizardStepIndex) !== null
+        ? Number(localStorage.getItem(localStorageKeys.wizardStepIndex))
+        : null;
+
+    console.log(storedWizardStepIndex);
+
+    if (storedWizardStepIndex !== null) {
+      setWizardStepIndex(
+        Number(localStorage.getItem(localStorageKeys.wizardStepIndex)),
+      );
+    } else {
+      localStorage.setItem(localStorageKeys.wizardStepIndex, String(0));
+      setWizardStepIndex(0);
+    }
   }, []);
+
+  const [fieldInputValues, setFieldInputValues] = useState<FieldInputValues>(
+    {},
+  );
+
+  const [fieldInputValidities, setFieldInputValidities] =
+    useState<FieldInputValidities>({});
 
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
 
@@ -283,19 +302,6 @@ export function Wizard({ children }: WizardSteps) {
         : Object.values(fieldInputValidities).every(Boolean),
     );
   }, [fieldInputValidities]);
-
-  const [wizardStepIndex, setWizardStepIndex] = useState<number>(
-    userId &&
-      Number(localStorage.getItem(localStorageKeys.wizardStepIndex)) <
-        wizardSteps.length - 1
-      ? Number(localStorage.getItem(localStorageKeys.wizardStepIndex))
-      : 0,
-  );
-
-  localStorage.setItem(
-    localStorageKeys.wizardStepIndex,
-    String(wizardStepIndex),
-  );
 
   return (
     <WizardContext.Provider
@@ -311,9 +317,9 @@ export function Wizard({ children }: WizardSteps) {
       }}
     >
       <div className="bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md">
-        {wizardSteps[wizardStepIndex]}
+        {wizardSteps[wizardStepIndex as number]}
         <div className="flex items-center">
-          {wizardStepIndex > 0 && (
+          {(wizardStepIndex as number) > 0 && (
             <button
               className="px-6 py-2 rounded transition bg-blue-500 hover:bg-blue-600 text-white"
               disabled={userId !== null && !canSubmit}
@@ -321,7 +327,11 @@ export function Wizard({ children }: WizardSteps) {
                 if (userId) {
                   const nonNullUserId = userId as number;
                   updateUser({ userId, updates: fieldInputValues });
-                  setWizardStepIndex(wizardStepIndex - 1);
+                  localStorage.setItem(
+                    localStorageKeys.wizardStepIndex,
+                    String((wizardStepIndex as number) - 1),
+                  );
+                  setWizardStepIndex((wizardStepIndex as number) - 1);
                 }
               }}
             >
@@ -329,7 +339,7 @@ export function Wizard({ children }: WizardSteps) {
             </button>
           )}
           <div className="flex-grow" />
-          {wizardStepIndex < wizardSteps.length - 1 && (
+          {(wizardStepIndex as number) < wizardSteps.length - 1 && (
             <button
               className={`px-6 py-2 rounded transition bg-blue-500 hover:bg-blue-600 ${
                 canSubmit ? "text-white" : "text-gray-500"
@@ -339,7 +349,12 @@ export function Wizard({ children }: WizardSteps) {
                 if (userId) {
                   const nonNullUserId = userId as number;
                   updateUser({ userId, updates: fieldInputValues });
-                  setWizardStepIndex(wizardStepIndex + 1);
+                  localStorage.setItem(
+                    localStorageKeys.wizardStepIndex,
+                    String((wizardStepIndex as number) + 1),
+                  );
+
+                  setWizardStepIndex((wizardStepIndex as number) + 1);
                 }
               }}
             >
@@ -348,7 +363,9 @@ export function Wizard({ children }: WizardSteps) {
           )}
         </div>
         <div className="mt-6">
-          <ProgressBar width={(wizardStepIndex + 1) / wizardSteps.length} />
+          <ProgressBar
+            width={((wizardStepIndex as number) + 1) / wizardSteps.length}
+          />
         </div>
       </div>
     </WizardContext.Provider>
