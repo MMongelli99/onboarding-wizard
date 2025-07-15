@@ -6,7 +6,9 @@ import {
   FieldInputValidities,
 } from "../contexts/WizardContext";
 
-export type Field = "email_address" | "password" | "birthdate" | "about_me";
+type SimpleField = "email_address" | "password" | "birthdate" | "about_me";
+type ComplexField = "address";
+export type Field = SimpleField | ComplexField;
 
 type FieldType = "text" | "textarea" | "email" | "password" | "date";
 
@@ -17,7 +19,7 @@ type FieldInitializer = {
   isValid: (value: string) => boolean;
 };
 
-const fieldInitializers: Record<Field, FieldInitializer> = {
+const fieldInitializers: Record<SimpleField, FieldInitializer> = {
   email_address: {
     type: "email",
     placeholder: "email address",
@@ -43,7 +45,7 @@ const fieldInitializers: Record<Field, FieldInitializer> = {
   },
 };
 
-function FieldInput({ field }: { field: Field }) {
+function FieldInput({ field }: { field: SimpleField }) {
   const context = useContext(WizardContext);
   if (!context) throw new Error("WizardContext not available");
 
@@ -180,9 +182,13 @@ export function WizardStep({
       {title && <h1 className="text-2xl font-semibold mb-2">{title}</h1>}
       {description && <p className="text-gray-400 mb-6">{description}</p>}
       <div className="space-y-4 mb-6">
-        {fields.map((field, idx) => (
-          <FieldInput key={idx} field={field} />
-        ))}
+        {fields.map((field, idx) =>
+          field === "address" ? (
+            <div>hi</div>
+          ) : (
+            <FieldInput key={idx} field={field} />
+          ),
+        )}
       </div>
     </div>
   );
