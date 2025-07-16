@@ -10,6 +10,13 @@ type SimpleField = "email_address" | "password" | "birthdate" | "about_me";
 type ComplexField = "address";
 export type Field = SimpleField | ComplexField;
 
+type Address = {
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+};
+
 type FieldType = "text" | "textarea" | "email" | "password" | "date";
 
 type FieldInitializer = {
@@ -156,6 +163,95 @@ function FieldInput({ field }: { field: SimpleField }) {
   );
 }
 
+function AddressInput() {
+  const context = useContext(WizardContext);
+  if (!context) throw new Error("WizardContext not available");
+
+  const {
+    userId,
+    fieldInputValues,
+    setFieldInputValues,
+    fieldInputValidities,
+    setFieldInputValidities,
+  } = context;
+
+  const [addressValue, setAddressValue] = useState({
+    street: "",
+    city: "",
+    state: "",
+    zip: "",
+  } as Address);
+
+  useEffect(() => {
+    if (userId) {
+      getFormData({
+        userId,
+        onSuccess: (data) => {
+          const storedUserData = data as Record<string, unknown>;
+          const storedValue = (
+            storedUserData["address"] !== null
+              ? storedUserData["address"]
+              : addressValue
+          ) as Address;
+          setFieldInputValues(storedValue);
+          setFieldInputValidities({
+            ...fieldInputValidities,
+            ...Object.entries(storedValue).reduce(
+              (acc, [addressField, addressFieldValue]) => {
+                acc[addressField] = addressFieldValue !== "";
+                return acc;
+              },
+              {} as Record<string, boolean>,
+            ),
+          });
+        },
+        onError: (errMsg) => {
+          console.error("Failed to retrieve address data:", errMsg);
+        },
+      });
+    }
+  }, [userId]);
+  // 1. get initial value from db (getFormData.address as JSON)
+  // 2. populate subfields with values
+  // 3. create subwidget for each subfield
+  //    3.1. add a frickin error handler
+  //    3.2. add onChange callbacks to each input element
+
+  return (
+    <>
+      {(Object.entries(addressValue) as [keyof Address, string][]).map(
+        ([addressField, addressFieldValue], idx) => (
+          <div key={idx} className="mb-4">
+            {true && (
+              <p className="text-red-500 text-sm mb-1">{`Please provide a ${addressField}`}</p>
+            )}
+            {
+              <input
+                type="text"
+                placeholder={addressField}
+                value={addressValue[addressField]}
+                onChange={(e) => {
+                  const updatedValue = {
+                    ...addressValue,
+                    [addressField]: e.target.value,
+                  } as Address;
+                  setAddressValue(updatedValue);
+                  setFieldInputValues(updatedValue);
+                  setFieldInputValidities({
+                    ...fieldInputValidities,
+                    [addressField]: e.target.value !== null,
+                  });
+                }}
+                className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            }
+          </div>
+        ),
+      )}
+    </>
+  );
+}
+
 export function WizardStep({
   title,
   description,
@@ -184,7 +280,7 @@ export function WizardStep({
       <div className="space-y-4 mb-6">
         {fields.map((field, idx) =>
           field === "address" ? (
-            <div>hi</div>
+            <AddressInput key={idx} />
           ) : (
             <FieldInput key={idx} field={field} />
           ),
@@ -264,8 +360,6 @@ export function Wizard({ children }: WizardSteps) {
         ? Number(localStorage.getItem(localStorageKeys.wizardStepIndex))
         : null;
 
-    console.log(storedWizardStepIndex);
-
     if (storedWizardStepIndex !== null) {
       setWizardStepIndex(
         Number(localStorage.getItem(localStorageKeys.wizardStepIndex)),
@@ -311,11 +405,12 @@ export function Wizard({ children }: WizardSteps) {
         <div className="flex items-center">
           {(wizardStepIndex as number) > 0 && (
             <button
-              className="px-6 py-2 rounded transition bg-blue-500 hover:bg-blue-600 text-white"
+              className={`px-6 py-2 rounded transition bg-blue-500 hover:bg-blue-600 ${
+                canSubmit ? "text-white" : "text-gray-500"
+              }`}
               disabled={userId !== null && !canSubmit}
               onClick={() => {
                 if (userId) {
-                  const nonNullUserId = userId as number;
                   updateUser({ userId, updates: fieldInputValues });
                   localStorage.setItem(
                     localStorageKeys.wizardStepIndex,
@@ -337,7 +432,6 @@ export function Wizard({ children }: WizardSteps) {
               disabled={userId !== null && !canSubmit}
               onClick={() => {
                 if (userId) {
-                  const nonNullUserId = userId as number;
                   updateUser({ userId, updates: fieldInputValues });
                   localStorage.setItem(
                     localStorageKeys.wizardStepIndex,
