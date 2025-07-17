@@ -6,6 +6,13 @@ import {
   FieldInputValidities,
 } from "../contexts/WizardContext";
 
+function capitalizeEachWord(input: string): string {
+  return input
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}
+
 type SimpleField = "email_address" | "password" | "birthdate" | "about_me";
 type ComplexField = "address";
 export type Field = SimpleField | ComplexField;
@@ -26,29 +33,163 @@ type FieldInitializer = {
   isValid: (value: string) => boolean;
 };
 
+type AddressInitializer = {
+  [K in keyof Address]: FieldInitializer;
+};
+
+const validUsStates = new Set([
+  "AL",
+  "AK",
+  "AZ",
+  "AR",
+  "CA",
+  "CO",
+  "CT",
+  "DE",
+  "FL",
+  "GA",
+  "HI",
+  "ID",
+  "IL",
+  "IN",
+  "IA",
+  "KS",
+  "KY",
+  "LA",
+  "ME",
+  "MD",
+  "MA",
+  "MI",
+  "MN",
+  "MS",
+  "MO",
+  "MT",
+  "NE",
+  "NV",
+  "NH",
+  "NJ",
+  "NM",
+  "NY",
+  "NC",
+  "ND",
+  "OH",
+  "OK",
+  "OR",
+  "PA",
+  "RI",
+  "SC",
+  "SD",
+  "TN",
+  "TX",
+  "UT",
+  "VT",
+  "VA",
+  "WA",
+  "WV",
+  "WI",
+  "WY",
+  "Alabama",
+  "Alaska",
+  "Arizona",
+  "Arkansas",
+  "California",
+  "Colorado",
+  "Connecticut",
+  "Delaware",
+  "Florida",
+  "Georgia",
+  "Hawaii",
+  "Idaho",
+  "Illinois",
+  "Indiana",
+  "Iowa",
+  "Kansas",
+  "Kentucky",
+  "Louisiana",
+  "Maine",
+  "Maryland",
+  "Massachusetts",
+  "Michigan",
+  "Minnesota",
+  "Mississippi",
+  "Missouri",
+  "Montana",
+  "Nebraska",
+  "Nevada",
+  "New Hampshire",
+  "New Jersey",
+  "New Mexico",
+  "New York",
+  "North Carolina",
+  "North Dakota",
+  "Ohio",
+  "Oklahoma",
+  "Oregon",
+  "Pennsylvania",
+  "Rhode Island",
+  "South Carolina",
+  "South Dakota",
+  "Tennessee",
+  "Texas",
+  "Utah",
+  "Vermont",
+  "Virginia",
+  "Washington",
+  "West Virginia",
+  "Wisconsin",
+  "Wyoming",
+]);
+
+const addressInitializer: AddressInitializer = {
+  street: {
+    type: "text",
+    placeholder: "street",
+    errorMessage: "Please provide your street address",
+    isValid: (value: string) => value.trim() !== "",
+  },
+  city: {
+    type: "text",
+    placeholder: "city",
+    errorMessage: "Please provide your city",
+    isValid: (value: string) => value.trim() !== "",
+  },
+  state: {
+    type: "text",
+    placeholder: "state",
+    errorMessage: "Please provide your state",
+    isValid: (value: string) => validUsStates.has(value.trim()),
+  },
+  zip: {
+    type: "text",
+    placeholder: "ZIP Code",
+    errorMessage: "Please provide your ZIP code",
+    isValid: (value: string) => value.trim() !== "",
+  },
+};
+
 const fieldInitializers: Record<SimpleField, FieldInitializer> = {
   email_address: {
     type: "email",
     placeholder: "email address",
     errorMessage: "Please enter a valid email address",
-    isValid: (value: string) => /\S+@\S+\.\S+/.test(value),
+    isValid: (value: string) => /\S+@\S+\.\S+/.test(value.trim()),
   },
   password: {
     type: "password",
     placeholder: "password",
     errorMessage: "Please enter a password",
-    isValid: (value: string) => value !== "",
+    isValid: (value: string) => value.trim() !== "",
   },
   birthdate: {
     type: "date",
     errorMessage: "Please enter your date of birth",
-    isValid: (value: string) => value !== "",
+    isValid: (value: string) => value.trim() !== "",
   },
   about_me: {
     type: "textarea",
     placeholder: "about you...",
     errorMessage: "Please tell us about yourself",
-    isValid: (value: string) => value !== "",
+    isValid: (value: string) => value.trim() !== "",
   },
 };
 
@@ -126,20 +267,28 @@ function FieldInput({ field }: { field: SimpleField }) {
 
     if (["email", "password", "text", "date"].includes(fieldInitializer.type)) {
       return (
-        <input
-          type={fieldInitializer.type}
-          placeholder={fieldInitializer.placeholder}
-          value={valueInitializer}
-          onChange={onChange}
-          className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <div className="flex flex-col">
+          <span className="m-2">
+            {capitalizeEachWord(field.replace("_", " "))}
+          </span>
+          <input
+            type={fieldInitializer.type}
+            placeholder={fieldInitializer.placeholder}
+            value={valueInitializer}
+            onChange={onChange}
+            className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
       );
     }
 
     if (["textarea"].includes(fieldInitializer.type)) {
       return (
         <div className="flex flex-col">
-          <span className="m-2">About Me</span>
+          <span className="m-2">
+            {capitalizeEachWord(field.replace("_", " "))}
+          </span>
+
           <textarea
             value={valueInitializer}
             onChange={onChange}
@@ -153,12 +302,12 @@ function FieldInput({ field }: { field: SimpleField }) {
 
   return (
     <div className="mb-4">
+      {createFieldInputElement({ fieldInitializer, valueInitializer: value })}
       {!isValid && (
-        <p className="text-red-500 text-sm mb-1">
+        <p className="text-red-500 text-sm mt-2">
           {fieldInitializer.errorMessage}
         </p>
       )}
-      {createFieldInputElement({ fieldInitializer, valueInitializer: value })}
     </div>
   );
 }
@@ -193,6 +342,7 @@ function AddressInput() {
               ? storedUserData["address"]
               : addressValue
           ) as Address;
+          setAddressValue(storedValue);
           setFieldInputValues(storedValue);
           setFieldInputValidities({
             ...fieldInputValidities,
@@ -211,24 +361,20 @@ function AddressInput() {
       });
     }
   }, [userId]);
-  // 1. get initial value from db (getFormData.address as JSON)
-  // 2. populate subfields with values
-  // 3. create subwidget for each subfield
-  //    3.1. add a frickin error handler
-  //    3.2. add onChange callbacks to each input element
 
   return (
     <>
-      {(Object.entries(addressValue) as [keyof Address, string][]).map(
-        ([addressField, addressFieldValue], idx) => (
+      {(["street", "city", "state", "zip"] as (keyof Address)[]).map(
+        (addressField, idx) => (
           <div key={idx} className="mb-4">
-            {true && (
-              <p className="text-red-500 text-sm mb-1">{`Please provide a ${addressField}`}</p>
-            )}
-            {
+            <div className="flex flex-col">
+              <span className="m-2">
+                {capitalizeEachWord(addressField.replace("_", " "))}
+              </span>
+
               <input
-                type="text"
-                placeholder={addressField}
+                type={addressInitializer[addressField].type}
+                placeholder={addressInitializer[addressField].placeholder}
                 value={addressValue[addressField]}
                 onChange={(e) => {
                   const updatedValue = {
@@ -244,10 +390,17 @@ function AddressInput() {
                 }}
                 className="w-full px-4 py-2 rounded bg-gray-900 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-            }
+            </div>
+            {!addressInitializer[addressField].isValid(
+              addressValue[addressField],
+            ) && (
+              <p className="text-red-500 text-sm mt-2">
+                {addressInitializer[addressField].errorMessage}
+              </p>
+            )}
           </div>
         ),
-      )}
+      )}{" "}
     </>
   );
 }
@@ -387,6 +540,45 @@ export function Wizard({ children }: WizardSteps) {
     );
   }, [fieldInputValidities]);
 
+  function prepareUpdateData(fieldInputValues: Record<string, string>) {
+    const addressKeys = ["street", "city", "state", "zip"];
+
+    const entries = Object.entries(fieldInputValues);
+
+    const hasAllAddressFields = addressKeys.every((k) =>
+      fieldInputValues.hasOwnProperty(k),
+    );
+
+    let updates;
+
+    if (hasAllAddressFields) {
+      const { address, other } = entries.reduce<{
+        address: Record<string, unknown>;
+        other: Record<string, unknown>;
+      }>(
+        (acc, [key, val]) => {
+          const trimmedVal = val.trim();
+          if (addressKeys.includes(key)) {
+            acc.address[key] = trimmedVal;
+          } else {
+            acc.other[key] = trimmedVal;
+          }
+          return acc;
+        },
+        { address: {}, other: {} },
+      );
+
+      updates = {
+        ...other,
+        address: JSON.stringify(address),
+      };
+    } else {
+      updates = fieldInputValues;
+    }
+
+    return updates;
+  }
+
   return (
     <WizardContext.Provider
       value={{
@@ -406,12 +598,21 @@ export function Wizard({ children }: WizardSteps) {
           {(wizardStepIndex as number) > 0 && (
             <button
               className={`px-6 py-2 rounded transition bg-blue-500 hover:bg-blue-600 ${
-                canSubmit ? "text-white" : "text-gray-500"
+                canSubmit || wizardStepIndex == wizardSteps.length - 1
+                  ? "text-white"
+                  : "text-gray-500"
               }`}
-              disabled={userId !== null && !canSubmit}
+              disabled={
+                Object.keys(fieldInputValues).length > 0 &&
+                userId !== null &&
+                !canSubmit
+              }
               onClick={() => {
                 if (userId) {
-                  updateUser({ userId, updates: fieldInputValues });
+                  if (Object.keys(fieldInputValues).length > 0) {
+                    const updates = prepareUpdateData(fieldInputValues);
+                    updateUser({ userId, updates });
+                  }
                   localStorage.setItem(
                     localStorageKeys.wizardStepIndex,
                     String((wizardStepIndex as number) - 1),
@@ -429,15 +630,21 @@ export function Wizard({ children }: WizardSteps) {
               className={`px-6 py-2 rounded transition bg-blue-500 hover:bg-blue-600 ${
                 canSubmit ? "text-white" : "text-gray-500"
               }`}
-              disabled={userId !== null && !canSubmit}
+              disabled={
+                Object.keys(fieldInputValues).length > 0 &&
+                userId !== null &&
+                !canSubmit
+              }
               onClick={() => {
                 if (userId) {
-                  updateUser({ userId, updates: fieldInputValues });
+                  if (Object.keys(fieldInputValues).length > 0) {
+                    const updates = prepareUpdateData(fieldInputValues);
+                    updateUser({ userId, updates });
+                  }
                   localStorage.setItem(
                     localStorageKeys.wizardStepIndex,
                     String((wizardStepIndex as number) + 1),
                   );
-
                   setWizardStepIndex((wizardStepIndex as number) + 1);
                 }
               }}
