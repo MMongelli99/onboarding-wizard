@@ -1,136 +1,86 @@
-import React, { useEffect, useState } from "react";
-import {
-  DndContext,
-  useDraggable,
-  useDroppable,
-  DragEndEvent,
-} from "@dnd-kit/core";
+import { useState, useEffect } from "react";
+import { Draggable, Droppable } from "./DragAndDrop";
+import { DndContext, DragEndEvent } from "@dnd-kit/core";
 import { getWizardComponents, updateWizardComponent } from "../services";
 
-const Draggable = ({
-  id,
-  disabled = false,
-}: {
-  id: string;
-  disabled?: boolean;
-}) => {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id,
-    disabled,
-  });
-  const style = {
-    transform: transform
-      ? `translate(${transform.x}px, ${transform.y}px)`
-      : undefined,
-    opacity: disabled ? 0.5 : 1,
-    cursor: disabled ? "not-allowed" : "move",
+type wizardComponentData = { wizardStepNumber: string };
+
+export default function Admin() {
+  type WizardStepsConfig = Record<
+    string, // wizard step number
+    string[] // components present in step of wizard
+  >;
+  const unusedComponentsKey = -1;
+  const wizardStepsConfigInit = {
+    [unusedComponentsKey]: [] as string[], // unused components
   };
-
-  return (
-    <div
-      ref={setNodeRef}
-      {...(!disabled ? listeners : {})}
-      {...attributes}
-      style={style}
-      className="p-2 m-2 bg-blue-500 text-white rounded"
-    >
-      {id}
-    </div>
+  const [wizardStepsConfig, setWizardStepsConfig] = useState<WizardStepsConfig>(
+    wizardStepsConfigInit,
   );
-};
 
-const Droppable = ({
-  id,
-  children,
-}: {
-  id: string;
-  children?: React.ReactNode;
-}) => {
-  const { isOver, setNodeRef } = useDroppable({ id });
-  const bgColor = isOver ? "bg-green-300" : "bg-gray-500";
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={`min-h-[100px] p-4 m-2 rounded border border-dashed border-gray-500 ${bgColor}`}
-    >
-      <p className="font-semibold mb-2">{id}</p>
-      {children}
-    </div>
-  );
-};
-
-const Admin = () => {
-  const [slots, setSlots] = useState<Record<string, Set<string>>>({
-    Components: new Set(),
-    "Step 2": new Set(),
-    "Step 3": new Set(),
-  });
-
+  // get wizard steps configuration from db
   useEffect(() => {
+    function handleSuccess(data: unknown) {
+      setWizardStepsConfig(
+        (data as { kind: string; step: number }[]).reduce(
+          (acc: WizardStepsConfig, { kind, step }) => {
+            const componentName = kind;
+            const wizardStepNumber = step;
+            if (!acc[wizardStepNumber]) acc[wizardStepNumber] = [];
+            // prevent duplicates
+            acc[wizardStepNumber].push(componentName);
+            acc[wizardStepNumber] = [...new Set(acc[wizardStepNumber])];
+            return acc;
+          },
+          wizardStepsConfigInit,
+        ),
+      );
+    }
     getWizardComponents({
-      onSuccess: (data) => {
-        const initial: Record<string, Set<string>> = {
-          Components: new Set(),
-          "Step 2": new Set(),
-          "Step 3": new Set(),
-        };
-
-        for (const { kind, step } of data as Array<{
-          kind: string;
-          step: number;
-        }>) {
-          if (step === 2) initial["Step 2"].add(kind);
-          else if (step === 3) initial["Step 3"].add(kind);
-          else initial["Components"].add(kind);
-        }
-
-        setSlots(initial);
-      },
+      onSuccess: handleSuccess,
       onError: (errMsg) => {
-        console.error("Failed to fetch components:", errMsg);
+        console.error("Failed to fetch wizard components:", errMsg);
       },
     });
   }, []);
 
-  const findContainer = (id: string) => {
-    return (
-      Object.entries(slots).find(([_, items]) => items.has(id))?.[0] ||
-      "Components"
-    );
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { over, active } = event;
+  function handleDragEnd(event: DragEndEvent) {
+    const {
+      active, // active item being dragged
+      over, // area item has been dropped over
+    } = event;
     if (!over || !active) return;
 
-    const fromId = findContainer(active.id);
-    const toId = over.id;
+    const draggedComponentName = String(active.id);
 
-    if (fromId === toId) return;
+    // wizard step numbers
+    const fromStep = (active.data.current as unknown as wizardComponentData)
+      .wizardStepNumber;
+    const toStep = String(over.id);
 
-    setSlots((prev) => {
+    if (fromStep === toStep) return;
+
+    setWizardStepsConfig((prev: WizardStepsConfig) => {
       const updated = { ...prev };
 
-      // Remove from old container
-      updated[fromId] = new Set(
-        [...updated[fromId]].filter((x) => x !== active.id),
+      // remove component from previous wizard step
+      updated[fromStep] = updated[fromStep].filter(
+        (componentName) => componentName !== draggedComponentName,
       );
 
-      // Add to new container
-      updated[toId] = new Set([...updated[toId], active.id]);
+      // add component to new wizard step
+      updated[toStep] = [
+        ...new Set([...(updated[toStep] ?? []), draggedComponentName]),
+      ];
 
       return updated;
     });
 
-    // PATCH backend to update step field
-    const newStep =
-      toId === "Components" ? null : parseInt(toId.replace(/\D/g, ""), 10);
-
-    updateWizardComponent({ kind: active.id, step: newStep }).catch((err) =>
-      console.error("Failed to update step", err),
-    );
-  };
+    updateWizardComponent({
+      kind: draggedComponentName,
+      step: Number(toStep),
+    }).catch((err) => console.error("Failed to update step", err));
+  }
 
   return (
     <div className="p-8 min-h-screen text-white bg-gray-900">
@@ -140,52 +90,79 @@ const Admin = () => {
       </h2>
       <ul>
         <li className="m-4">
-          • Drag and drop components between steps of the onboarding wizard.
+          &bull; Drag and drop components between steps of the onboarding
+          wizard.
         </li>
         <li className="m-4">
-          • Omit a component from the wizard by leaving it in the "Components"
-          area.
+          &bull; Omit a component from the wizard by leaving it in the
+          "Components" area.
         </li>
         <li className="m-4">
-          • Each step of the wizard must have one component.
+          &bull; Each step of the wizard must have one component.
         </li>
       </ul>
       <DndContext onDragEnd={handleDragEnd}>
         <div className="flex flex-row space-x-12">
-          {/* Components Area */}
           <div className="w-1/2">
-            <h3 className="text-2xl mb-2">Components:</h3>
-            <Droppable id="Components">
-              {[...slots["Components"]].map((component) => (
-                <Draggable key={component} id={component} />
-              ))}
-            </Droppable>
+            <h3 className="text-2xl mb-2">Wizard Components:</h3>
+            <div className="flex flex-col space-y-6">
+              <Droppable id={String(unusedComponentsKey)}>
+                {[
+                  ...wizardStepsConfig[unusedComponentsKey].map(
+                    (componentName) => (
+                      <Draggable
+                        displayName={componentName}
+                        key={componentName}
+                        id={componentName}
+                        data={
+                          {
+                            wizardStepNumber: String(unusedComponentsKey),
+                          } as wizardComponentData
+                        }
+                      ></Draggable>
+                    ),
+                  ),
+                ]}
+              </Droppable>
+            </div>
           </div>
-
-          {/* Wizard Steps Area */}
           <div className="w-1/2">
             <h3 className="text-2xl mb-2">Wizard Steps:</h3>
             <div className="flex flex-col space-y-6">
-              {["Step 2", "Step 3"].map((step) => (
-                <Droppable key={step} id={step}>
-                  {[...slots[step]].map((component) => {
-                    const isOnlyOne = slots[step].size === 1;
-                    return (
-                      <Draggable
-                        key={component}
-                        id={component}
-                        disabled={isOnlyOne}
-                      />
-                    );
-                  })}
-                </Droppable>
-              ))}
+              {Object.keys(wizardStepsConfig).map((wizardStepNumber) => {
+                if (Number(wizardStepNumber) === unusedComponentsKey) return;
+                return (
+                  <Droppable
+                    displayName={`Step ${wizardStepNumber}`}
+                    key={wizardStepNumber}
+                    id={wizardStepNumber}
+                  >
+                    {[...wizardStepsConfig[wizardStepNumber]].map(
+                      (componentName) => {
+                        const isOnlyComponentInWizardStep =
+                          wizardStepsConfig[wizardStepNumber].length === 1;
+                        return (
+                          <Draggable
+                            displayName={componentName}
+                            key={componentName}
+                            id={componentName}
+                            disabled={isOnlyComponentInWizardStep}
+                            data={
+                              {
+                                wizardStepNumber: wizardStepNumber,
+                              } as wizardComponentData
+                            }
+                          ></Draggable>
+                        );
+                      },
+                    )}
+                  </Droppable>
+                );
+              })}
             </div>
           </div>
         </div>
-      </DndContext>{" "}
+      </DndContext>
     </div>
   );
-};
-
-export default Admin;
+}

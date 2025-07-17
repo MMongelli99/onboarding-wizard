@@ -24,48 +24,39 @@ export const getDatabaseTables = fetchFromBackendHandled("/data");
 export const getWizardComponents = fetchFromBackendHandled("/components");
 
 export function getFormData({
-  newUserID,
+  userId,
   onSuccess,
   onError,
 }: {
-  newUserID: number;
+  userId: number;
   onSuccess: (data: unknown) => void;
   onError: (message: string) => void;
 }): void {
-  fetchFromBackendHandled(`/users/${newUserID}`)({
+  fetchFromBackendHandled(`/users/${userId}`)({
     onSuccess: onSuccess,
     onError: onError,
   });
 }
 
 export function updateUser({
-  userID,
+  userId,
   updates,
 }: {
-  userID: number;
+  userId: number;
   updates: Record<string, string | number>;
-}): Promise {
-  return fetch(`${BACKEND_API_BASE}/api/users/${userID}`, {
+}): Promise<Response> {
+  return fetch(`${BACKEND_API_BASE}/api/users/${userId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updates),
   });
 }
 
-export function setCredentials({
-  email_address,
-  password,
-}: {
-  email_address: string;
-  password: string;
-}): Promise {
+export function createUser(): Promise<Response> {
   return fetch(`${BACKEND_API_BASE}/api/users`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email_address: email_address.trim(),
-      password: password.trim(),
-    }),
+    body: JSON.stringify({}),
   });
 }
 
@@ -75,7 +66,7 @@ export function updateWizardComponent({
 }: {
   kind: string;
   step: number | null;
-}): Promise {
+}): Promise<Response> {
   return fetch(`${BACKEND_API_BASE}/api/components/${kind}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
