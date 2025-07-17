@@ -183,7 +183,18 @@ const fieldInitializers: Record<SimpleField, FieldInitializer> = {
   birthdate: {
     type: "date",
     errorMessage: "Please enter your date of birth",
-    isValid: (value: string) => value.trim() !== "",
+    isValid: (value: string) => {
+      if (!value) return false;
+
+      const birthdate = new Date(value);
+      if (isNaN(birthdate.getTime())) return false;
+
+      const now = new Date();
+      const ageInMs = now.getTime() - birthdate.getTime();
+      const ageInYears = Math.floor(ageInMs / (1000 * 60 * 60 * 24 * 365));
+
+      return ageInYears > 0 && ageInYears < 122;
+    },
   },
   about_me: {
     type: "textarea",
