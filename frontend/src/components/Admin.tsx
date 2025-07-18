@@ -21,20 +21,22 @@ export default function Admin() {
   // get wizard steps configuration from db
   useEffect(() => {
     function handleSuccess(data: unknown) {
-      setWizardStepsConfig(
-        (data as { kind: string; step: number }[]).reduce(
-          (acc: WizardStepsConfig, { kind, step }) => {
-            const componentName = kind;
-            const wizardStepNumber = step;
-            if (!acc[wizardStepNumber]) acc[wizardStepNumber] = [];
-            // prevent duplicates
-            acc[wizardStepNumber].push(componentName);
-            acc[wizardStepNumber] = [...new Set(acc[wizardStepNumber])];
-            return acc;
-          },
-          wizardStepsConfigInit,
-        ),
-      );
+      console.log("wizard steps config:", wizardStepsConfig);
+      const updatedWizardStepsConfig = (
+        data as { kind: string; step: number }[]
+      ).reduce((acc: WizardStepsConfig, { kind, step }) => {
+        const componentName = kind;
+        const wizardStepNumber = step;
+        console.log("kind:", kind);
+        console.log("step:", step);
+        if (!acc[wizardStepNumber]) acc[wizardStepNumber] = [];
+        // prevent duplicates
+        acc[wizardStepNumber].push(componentName);
+        acc[wizardStepNumber] = [...new Set(acc[wizardStepNumber])];
+        return acc;
+      }, wizardStepsConfigInit);
+      console.log("updated wizard steps config:", updatedWizardStepsConfig);
+      setWizardStepsConfig(updatedWizardStepsConfig);
     }
     getWizardComponents({
       onSuccess: handleSuccess,
