@@ -12,6 +12,40 @@ type WizardComponent = {
   kind: string;
 };
 
+function ComponentDraggable({
+  wizardComponent,
+}: {
+  wizardComponent: WizardComponent;
+}) {
+  const { step, kind } = wizardComponent;
+  return (
+    <button key={kind} className="text-white bg-gray-300 my-1">
+      {kind}
+    </button>
+  );
+}
+
+function StepDroppable({
+  wizardStep,
+  children,
+}: {
+  wizardStep: WizardStep;
+  children:
+    | React.ReactElement<typeof ComponentDraggable>
+    | React.ReactElement<typeof ComponentDraggable>[];
+}) {
+  const { step, title } = wizardStep;
+  return (
+    <div
+      key={title}
+      className={`${title === "Unused" ? "bg-gray-600" : "bg-gray-800"} rounded-lg p-5 m-3 h-64 w-48`}
+    >
+      <span className="text-3xl font-semibold">{title}</span>
+      <div className="mt-4">{children} </div>
+    </div>
+  );
+}
+
 export default function Admin() {
   const steps: WizardStep[] = [
     { step: -1, title: "Unused" },
@@ -19,9 +53,7 @@ export default function Admin() {
     { step: 3, title: "Step 3" },
   ];
 
-  const [wizardComponents, setWizardComponents] = useState<
-    Array<WizardComponent>
-  >([
+  const [wizardComponents, setWizardComponents] = useState<WizardComponent[]>([
     { step: -1, kind: "birthdate" },
     { step: -1, kind: "address" },
     { step: -1, kind: "about_me" },
@@ -30,7 +62,7 @@ export default function Admin() {
   useEffect(() => {
     getWizardComponents({
       onSuccess: (data) => {
-        const storedValues = (data as Array<Record<string, unknown>>).map(
+        const storedValues = (data as Record<string, unknown>[]).map(
           (component) => {
             const step = component.step as number;
             const kind = component.kind as string;
@@ -45,6 +77,23 @@ export default function Admin() {
     });
   }, []);
 
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+
+    if (!over) return;
+
+    const kind = active.id as string;
+    const updatedStep = over.id as number;
+
+    updateWizardComponent({ step: updatedStep, kind });
+
+    setWizardComponents(
+      wizardComponents.map(({ step: s, kind: k }) =>
+        kind === k ? { step: updatedStep, kind: k } : { step: s, kind: k },
+      ),
+    );
+  }
+
   return (
     <div className="flex-col">
       <div className="mb-5">
@@ -57,24 +106,22 @@ export default function Admin() {
         <span>Unused components will not appear in the wizard.</span>
       </div>
       <div className="flex">
-        {steps.map(({ step: stepI, title }, i) => (
-          <div
-            key={title}
-            className={`${title === "Unused" ? "bg-gray-600" : "bg-gray-800"} rounded-lg p-5 m-3 h-64 w-48`}
-          >
-            <span className="text-3xl font-semibold">{title}</span>
-            <div className="mt-4">
-              {wizardComponents.map(
-                ({ step: stepJ, kind }, j) =>
-                  stepI === stepJ && (
-                    <button key={kind} className="text-white bg-gray-300 my-1">
-                      {kind}
-                    </button>
-                  ),
-              )}
-            </div>
-          </div>
-        ))}
+        <DndContext>
+          {steps.map((wizardStep, i) => (
+            <StepDroppable key={i} wizardStep={wizardStep}>
+              {wizardComponents
+                .filter(
+                  (wizardComponent) => wizardStep.step === wizardComponent.step,
+                )
+                .map((wizardComponent, j) => (
+                  <ComponentDraggable
+                    key={j}
+                    wizardComponent={wizardComponent}
+                  />
+                ))}
+            </StepDroppable>
+          ))}
+        </DndContext>
       </div>
     </div>
   );
