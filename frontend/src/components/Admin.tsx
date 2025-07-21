@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
-import { DndContext, DragEndEvent } from "@dnd-kit/core";
+import {
+  DndContext,
+  DragEndEvent,
+  useDroppable,
+  useDraggable,
+} from "@dnd-kit/core";
 import { getWizardComponents, updateWizardComponent } from "../services";
 
 type WizardStep = {
@@ -18,8 +23,23 @@ function ComponentDraggable({
   wizardComponent: WizardComponent;
 }) {
   const { step, kind } = wizardComponent;
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: kind,
+  });
+
+  const style = transform
+    ? { transform: `translate(${transform.x}px, ${transform.y}px)` }
+    : undefined;
+
   return (
-    <button key={kind} className="text-white bg-gray-300 my-1">
+    <button
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      key={kind}
+      className="text-white bg-gray-300 my-1"
+      style={style}
+    >
       {kind}
     </button>
   );
@@ -35,8 +55,10 @@ function StepDroppable({
     | React.ReactElement<typeof ComponentDraggable>[];
 }) {
   const { step, title } = wizardStep;
+  const { setNodeRef } = useDroppable({ id: step });
   return (
     <div
+      ref={setNodeRef}
       key={title}
       className={`${title === "Unused" ? "bg-gray-600" : "bg-gray-800"} rounded-lg p-5 m-3 h-64 w-48`}
     >
@@ -100,13 +122,13 @@ export default function Admin() {
         <h1 className="text-2xl font-bold mb-6">Admin</h1>
         <span>
           Configure the onboarding wizard by dragging the components below into
-          their desired steps in the workflow.{" "}
+          their desired steps in the workflow.
         </span>
         <br />
         <span>Unused components will not appear in the wizard.</span>
       </div>
       <div className="flex">
-        <DndContext>
+        <DndContext onDragEnd={handleDragEnd}>
           {steps.map((wizardStep, i) => (
             <StepDroppable key={i} wizardStep={wizardStep}>
               {wizardComponents

@@ -50,14 +50,16 @@ function OnboardingWizard() {
           description="Please set your credentials."
           fields={["email_address", "password"]}
         />,
-        ...Object.entries(wizardSteps).map(([step, kinds]) => (
-          <WizardStep
-            key={step}
-            title={`Step ${step}`}
-            description="Please fill out the following fields."
-            fields={kinds as Field[]}
-          />
-        )),
+        ...Object.entries(wizardSteps)
+          .filter(([step, kinds]) => Number(step) !== -1)
+          .map(([step, kinds]) => (
+            <WizardStep
+              key={step}
+              title={`Step ${step}`}
+              description="Please fill out the following fields."
+              fields={kinds as Field[]}
+            />
+          )),
         <WizardStep
           title="Onboarding Complete!"
           description={`We've received all your info! 
