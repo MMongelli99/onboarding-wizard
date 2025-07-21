@@ -19,8 +19,10 @@ type WizardComponent = {
 
 function ComponentDraggable({
   wizardComponent,
+  disabled,
 }: {
   wizardComponent: WizardComponent;
+  disabled: boolean;
 }) {
   const { step, kind } = wizardComponent;
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
@@ -31,7 +33,15 @@ function ComponentDraggable({
     ? { transform: `translate(${transform.x}px, ${transform.y}px)` }
     : undefined;
 
-  return (
+  return disabled ? (
+    <button
+      key={kind}
+      className="text-gray-500 bg-gray-300 my-1"
+      disabled={true}
+    >
+      {kind}
+    </button>
+  ) : (
     <button
       ref={setNodeRef}
       {...listeners}
@@ -139,6 +149,13 @@ export default function Admin() {
                   <ComponentDraggable
                     key={j}
                     wizardComponent={wizardComponent}
+                    disabled={
+                      wizardStep.step !== -1 &&
+                      wizardComponents.filter(
+                        (wizardComponent) =>
+                          wizardStep.step === wizardComponent.step,
+                      ).length === 1
+                    }
                   />
                 ))}
             </StepDroppable>
